@@ -22,11 +22,11 @@ impl<'a> IpmiV2HeaderSlice<'a> {
     }
 
     pub fn auth_type(&self) -> u8 {
-        unsafe { u8::from_be_bytes([self.slice[0]]) }
+        u8::from_be_bytes([self.slice[0]])
     }
 
     pub fn payload_byte(&self) -> u8 {
-        unsafe { u8::from_be_bytes([self.slice[1]]) }
+        u8::from_be_bytes([self.slice[1]])
     }
 
     pub fn payload_enc(&self) -> bool {
@@ -45,55 +45,38 @@ impl<'a> IpmiV2HeaderSlice<'a> {
 
     pub fn oem_iana(&self) -> u32 {
         match self.payload_type() {
-            PayloadType::OEM => unsafe {
+            PayloadType::OEM => {
                 u32::from_be_bytes([self.slice[2], self.slice[3], self.slice[4], self.slice[5]])
-            },
+            }
             _ => 0x0,
         }
     }
 
     pub fn oem_payload_id(&self) -> u16 {
         match self.payload_type() {
-            PayloadType::OEM => unsafe {
-                unsafe { u16::from_be_bytes([self.slice[6], self.slice[7]]) }
-            },
+            PayloadType::OEM => u16::from_be_bytes([self.slice[6], self.slice[7]]),
             _ => 0x0,
         }
     }
 
     pub fn rmcp_plus_session_id(&self) -> u32 {
         match self.payload_type() {
-            PayloadType::OEM => unsafe {
-                unsafe {
-                    u32::from_be_bytes([
-                        self.slice[8],
-                        self.slice[9],
-                        self.slice[10],
-                        self.slice[11],
-                    ])
-                }
-            },
-            _ => unsafe {
-                u32::from_be_bytes([self.slice[2], self.slice[3], self.slice[4], self.slice[5]])
-            },
+            PayloadType::OEM => {
+                u32::from_be_bytes([self.slice[8], self.slice[9], self.slice[10], self.slice[11]])
+            }
+            _ => u32::from_be_bytes([self.slice[2], self.slice[3], self.slice[4], self.slice[5]]),
         }
     }
 
     pub fn session_seq_number(&self) -> u32 {
         match self.payload_type() {
-            PayloadType::OEM => unsafe {
-                unsafe {
-                    u32::from_be_bytes([
-                        self.slice[12],
-                        self.slice[13],
-                        self.slice[14],
-                        self.slice[15],
-                    ])
-                }
-            },
-            _ => unsafe {
-                u32::from_be_bytes([self.slice[6], self.slice[7], self.slice[8], self.slice[9]])
-            },
+            PayloadType::OEM => u32::from_be_bytes([
+                self.slice[12],
+                self.slice[13],
+                self.slice[14],
+                self.slice[15],
+            ]),
+            _ => u32::from_be_bytes([self.slice[6], self.slice[7], self.slice[8], self.slice[9]]),
         }
     }
 
