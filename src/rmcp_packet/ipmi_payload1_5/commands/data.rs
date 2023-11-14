@@ -7,7 +7,7 @@ pub trait Data {
     fn as_bytes(&self) -> &[u8];
     fn from_slice(bytes: &[u8]) -> Self;
 }
-
+// 0x38
 pub enum GetChannelAuthCapabilities {
     Request {
         channel_num: u8,

@@ -2,8 +2,6 @@ pub mod ipmi;
 pub mod rmcp;
 pub mod rmcp_packet;
 
-// use crate::ipmi_payload1_5::*;
-// use crate::rmcp_packet::*;
 use std::net::UdpSocket;
 
 use rmcp::rcmp_header::RmcpHeader;
@@ -46,7 +44,14 @@ fn main() {
 
     println!("{:x?}", ipmiv2header);
 
-    println!("{:x?}", u16::from_le_bytes([0xa, 0x00]))
+    println!("{:x?}", u16::from_le_bytes([0xa, 0x00]));
+
+    for x in 0x10..=0x1F {
+        print!("{:x?}, ", x)
+    }
+    println!();
+
+    println!("{}", 0b10)
 
     // let rmcp_header = RmcpHeader {
     //     version: 0x6,

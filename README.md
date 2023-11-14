@@ -40,6 +40,14 @@ Bytes:
 
 ### IPMI Message Format
 
+session activation on page 84
+
 ![ipmi message format](images/ipmi_msg_format.png)
 
 ![ipmi payload detailed](images/ipmi_payload_details.png)
+
+### rqseq
+
+![ipmi payload sensor ids](images/ipmi_payload_sensor.png)
+
+![ipmi system software ids](images/ipmi_payload_software_ids.png)
