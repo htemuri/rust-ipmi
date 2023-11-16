@@ -1,12 +1,15 @@
+use std::fmt::Debug;
+
 use arrayvec::ArrayVec;
+use bitvec::vec;
 
 use crate::ipmi::{
-    data::{app::channel::GetChannelAuthCapabilitiesRequest, commands::Command},
-    payload::ipmi_payload_request_slice::IpmiPayloadRequestSlice,
+    data::commands::Command, payload::ipmi_payload_request_slice::IpmiPayloadRequestSlice,
 };
 
 use super::ipmi_payload::{AddrType, Lun, NetFn, SlaveAddress, SoftwareType};
 
+#[derive(Debug, Eq, PartialEq, Hash)]
 pub struct IpmiPayloadRequest {
     pub rs_addr_type: AddrType,
     pub rs_slave_address_type: Option<SlaveAddress>,
@@ -20,10 +23,12 @@ pub struct IpmiPayloadRequest {
     pub rq_sequence: u8,
     pub rq_lun: Lun,
     pub command: Command,
-    pub data: Option<Box<dyn Data>>,
+    pub data: Vec<u8>, // pub data: Option<dyn Data>,
 }
 
 impl IpmiPayloadRequest {
+    pub const MAX_PAYLOAD_LENGTH: usize = 0xff;
+
     pub fn new(net_fn: NetFn, command: Command) -> IpmiPayloadRequest {
         IpmiPayloadRequest {
             rs_addr_type: AddrType::SlaveAddress,
@@ -37,23 +42,15 @@ impl IpmiPayloadRequest {
             rq_sequence: 0x00,
             rq_lun: Lun::Bmc,
             command,
-            data: None,
+            data: vec![], // data: None,
         }
     }
 
+    // returns the payload as an object and the length of the payload
     pub fn from_slice(slice: &[u8]) -> Result<(IpmiPayloadRequest, &[u8]), std::io::ErrorKind> {
         let h = IpmiPayloadRequestSlice::from_slice(slice)?;
         // println!("{:x?}", h);
+        // Ok(h.to_header())
         Ok((h.to_header(), &slice[h.slice().len()..]))
     }
-}
-
-pub trait Data {
-    // fn to_bytes(&self) -> ArrayVec<u8, 8092>;
-    // fn from_slice<T>(slice: &[u8]) -> Result<T, std::io::ErrorKind>;
-    // fn test(&self) -> u8;
-}
-
-pub struct GenericData<T> {
-    pub data: Option<T>,
 }

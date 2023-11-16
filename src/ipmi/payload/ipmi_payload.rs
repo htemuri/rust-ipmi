@@ -35,7 +35,7 @@
 // }
 
 // use crate::ipmi::data::netfn::CommandType;
-
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum NetFn {
     Chassis,
     Bridge,
@@ -104,11 +104,12 @@ impl NetFn {
     }
 }
 
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum CommandType {
     Request,
     Response,
 }
-
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum Lun {
     Bmc,
     Oem1,
@@ -138,6 +139,7 @@ impl Lun {
     }
 }
 
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum AddrType {
     SlaveAddress,
     SoftwareId,
@@ -151,7 +153,7 @@ impl AddrType {
         }
     }
 }
-
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum SoftwareType {
     Bios,
     SmiHandler,
@@ -175,7 +177,7 @@ impl SoftwareType {
         }
     }
 }
-
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum SlaveAddress {
     Bmc,
     Unknown(u8),

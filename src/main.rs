@@ -1,6 +1,6 @@
 pub mod ipmi;
 pub mod rmcp;
-pub mod rmcp_packet;
+// pub mod rmcp_packet;
 
 use std::net::UdpSocket;
 
@@ -51,7 +51,7 @@ fn main() {
     }
     println!();
 
-    println!("{}", 0b10)
+    // println!("{}", 0b10)
 
     // let rmcp_header = RmcpHeader {
     //     version: 0x6,

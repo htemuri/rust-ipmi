@@ -1,12 +1,9 @@
 use arrayvec::ArrayVec;
 
-use crate::ipmi::payload::ipmi_payload_request::Data;
+use crate::ipmi::payload::ipmi_payload::NetFn;
 
-use super::{
-    app::channel::GetChannelAuthCapabilitiesRequest,
-    netfn::{CommandType, NetFn},
-};
-
+use super::{app::channel::GetChannelAuthCapabilitiesRequest, data::Data};
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum Command {
     // APP Commands
     GetChannelAuthCapabilities,
@@ -22,13 +19,13 @@ impl Command {
     }
 }
 
-pub fn data_from_slice(command: Command, slice: &[u8]) -> Box<dyn Data> {
-    match command {
-        Command::GetChannelAuthCapabilities => {
-            Box::new(GetChannelAuthCapabilitiesRequest::from_slice(slice))
-        }
-    }
-}
+// pub fn data_from_slice(command: Command, slice: &[u8]) -> Option<Box<dyn Data>> {
+//     match command {
+//         Command::GetChannelAuthCapabilities => Some(Box::new(
+//             GetChannelAuthCapabilitiesRequest::from_slice(slice),
+//         )),
+//     }
+// }
 
 // //
 
