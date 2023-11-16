@@ -1,5 +1,4 @@
-use super::{ipmi_v1_header::IpmiV1Header, ipmi_v2_header::IpmiV2Header, *};
-use arrayvec::ArrayVec;
+use super::{ipmi_v1_header::IpmiV1Header, ipmi_v2_header::IpmiV2Header};
 
 pub enum IpmiHeader {
     V1_5(IpmiV1Header),
@@ -9,12 +8,12 @@ pub enum IpmiHeader {
 impl IpmiHeader {
     pub const MAX_LEN: usize = 26;
 
-    fn to_bytes(&self) -> ArrayVec<u8, { IpmiHeader::MAX_LEN }> {
-        match self {
-            IpmiHeader::V1_5(header) => header.to_bytes(),
-            IpmiHeader::V2_0(header) => header.to_bytes(),
-        }
-    }
+    // fn to_bytes(&self) -> ArrayVec<u8, { IpmiHeader::MAX_LEN }> {
+    //     match self {
+    //         IpmiHeader::V1_5(header) => header.to_bytes(),
+    //         IpmiHeader::V2_0(header) => header.to_bytes(),
+    //     }
+    // }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]

@@ -152,6 +152,13 @@ impl AddrType {
             true => AddrType::SoftwareId,
         }
     }
+
+    pub fn to_u8(&self) -> u8 {
+        match self {
+            AddrType::SlaveAddress => 0,
+            AddrType::SoftwareId => 1,
+        }
+    }
 }
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum SoftwareType {
@@ -161,7 +168,7 @@ pub enum SoftwareType {
     Oem,
     RemoteConsoleSoftware(u8),
     TerminalModeRemoteConsole,
-    Reserved,
+    Reserved(u8),
 }
 
 impl SoftwareType {
@@ -173,7 +180,19 @@ impl SoftwareType {
             0x30..=0x3F => SoftwareType::Oem,
             0x40..=0x46 => SoftwareType::RemoteConsoleSoftware(software_id - 0x3F),
             0x47 => SoftwareType::TerminalModeRemoteConsole,
-            _ => SoftwareType::Reserved,
+            _ => SoftwareType::Reserved(software_id),
+        }
+    }
+
+    pub fn to_u8(&self) -> u8 {
+        match self {
+            SoftwareType::Bios => 0x00,
+            SoftwareType::SmiHandler => 0x10,
+            SoftwareType::SystemManagementSoftware => 0x20,
+            SoftwareType::Oem => 0x30,
+            SoftwareType::RemoteConsoleSoftware(a) => *a + 0x3F,
+            SoftwareType::TerminalModeRemoteConsole => 0x47,
+            SoftwareType::Reserved(a) => *a,
         }
     }
 }
@@ -188,6 +207,13 @@ impl SlaveAddress {
         match slave_address {
             0x20 => SlaveAddress::Bmc,
             _ => SlaveAddress::Unknown(slave_address),
+        }
+    }
+
+    pub fn to_u8(&self) -> u8 {
+        match self {
+            SlaveAddress::Bmc => 0x20,
+            SlaveAddress::Unknown(a) => *a,
         }
     }
 }

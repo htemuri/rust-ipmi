@@ -1,6 +1,6 @@
 use bitvec::{field::BitField, order::Msb0, slice::BitSlice};
 
-use crate::ipmi::data::commands::{self, Command};
+use crate::ipmi::data::commands::Command;
 
 use super::{
     ipmi_payload::{AddrType, Lun, NetFn, SlaveAddress, SoftwareType},
