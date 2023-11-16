@@ -1,13 +1,16 @@
+pub mod connection;
 pub mod ipmi;
+pub mod packet;
 pub mod rmcp;
 // pub mod rmcp_packet;
 
-use std::net::UdpSocket;
+use std::net::{Ipv4Addr, UdpSocket};
 
 use rmcp::rcmp_header::RmcpHeader;
 
-use crate::ipmi::{
-    ipmi_header::IpmiHeader, ipmi_v1_header::IpmiV1Header, ipmi_v2_header::IpmiV2Header,
+use crate::{
+    connection::Connection,
+    ipmi::{ipmi_header::IpmiHeader, ipmi_v1_header::IpmiV1Header, ipmi_v2_header::IpmiV2Header},
 };
 
 fn main() {
@@ -50,6 +53,13 @@ fn main() {
         print!("{:x?}, ", x)
     }
     println!();
+
+    let connection = Connection::new(Ipv4Addr::from([192, 168, 88, 10]));
+    let slice = [
+        0x6, 0x0, 0xff, 0x7, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0, 0x0, 0x0, 0x0, 0x9, 0x20, 0x18,
+        0xc8, 0x81, 0x00, 0x38, 0x8e, 0x04, 0xb5,
+    ];
+    connection.send(&slice)
 
     // println!("{}", 0b10)
 

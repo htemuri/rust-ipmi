@@ -1,8 +1,4 @@
-use arrayvec::ArrayVec;
-
-use crate::ipmi::{
-    data::app::channel::GetChannelAuthCapabilitiesRequest, payload::ipmi_payload::NetFn,
-};
+use crate::ipmi::payload::ipmi_payload::NetFn;
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum Command {

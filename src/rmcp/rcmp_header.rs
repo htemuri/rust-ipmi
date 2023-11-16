@@ -46,11 +46,11 @@ impl RmcpHeader {
 impl Default for RmcpHeader {
     fn default() -> RmcpHeader {
         RmcpHeader {
-            version: 0,
+            version: 0x06,
             reserved: 0,
-            sequence_number: 0,
+            sequence_number: 0xff,
             rmcp_ack: false,
-            message_class: MessageClass::None,
+            message_class: MessageClass::IPMI,
         }
     }
 }

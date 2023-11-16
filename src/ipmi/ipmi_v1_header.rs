@@ -14,6 +14,18 @@ pub struct IpmiV1Header {
     pub payload_length: u8,
 }
 
+impl Default for IpmiV1Header {
+    fn default() -> Self {
+        Self {
+            auth_type: AuthType::None,
+            session_seq_number: 0x00,
+            session_id: 0x00,
+            auth_code: 0x00,
+            payload_length: 0,
+        }
+    }
+}
+
 impl IpmiV1Header {
     pub const MIN_LEN: usize = 10;
 

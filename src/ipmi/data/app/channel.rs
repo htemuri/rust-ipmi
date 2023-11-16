@@ -12,7 +12,7 @@ pub struct GetChannelAuthCapabilitiesRequest {
 }
 
 impl GetChannelAuthCapabilitiesRequest {
-    pub fn from_slice(slice: &[u8]) -> GetChannelAuthCapabilitiesRequest {
+    pub fn from_slice(_slice: &[u8]) -> GetChannelAuthCapabilitiesRequest {
         // todo: add error checking
         GetChannelAuthCapabilitiesRequest {
             channel_version: true,

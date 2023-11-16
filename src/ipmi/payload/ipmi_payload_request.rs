@@ -1,16 +1,13 @@
+use bitvec::prelude::*;
 use std::fmt::Debug;
 
-// use bitvec::{bitvec, order::Msb0, vec::BitVec};
-use bitvec::prelude::*;
-
 use crate::ipmi::{
-    data::{self, commands::Command},
-    payload::ipmi_payload_request_slice::IpmiPayloadRequestSlice,
+    data::commands::Command, payload::ipmi_payload_request_slice::IpmiPayloadRequestSlice,
 };
 
 use super::ipmi_payload::{AddrType, CommandType, Lun, NetFn, SlaveAddress, SoftwareType};
 
-#[derive(Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct IpmiPayloadRequest {
     pub rs_addr_type: AddrType,
     pub rs_slave_address_type: Option<SlaveAddress>,
@@ -26,6 +23,25 @@ pub struct IpmiPayloadRequest {
     pub command: Command,
     pub data: Vec<u8>,
     // checksum 2
+}
+
+impl Default for IpmiPayloadRequest {
+    fn default() -> Self {
+        Self {
+            rs_addr_type: AddrType::SlaveAddress,
+            rs_slave_address_type: Some(SlaveAddress::Bmc),
+            rs_software_type: None,
+            net_fn: NetFn::App,
+            rs_lun: Lun::Bmc,
+            rq_addr_type: AddrType::SoftwareId,
+            rq_slave_address_type: None,
+            rq_software_type: Some(SoftwareType::RemoteConsoleSoftware(1)),
+            rq_sequence: 0x00,
+            rq_lun: Lun::Bmc,
+            command: Command::GetChannelAuthCapabilities,
+            data: vec![],
+        }
+    }
 }
 
 impl IpmiPayloadRequest {
@@ -65,11 +81,11 @@ impl IpmiPayloadRequest {
     }
 
     // returns the payload as an object and the length of the payload
-    pub fn from_slice(slice: &[u8]) -> Result<(IpmiPayloadRequest, &[u8]), std::io::ErrorKind> {
-        let h = IpmiPayloadRequestSlice::from_slice(slice)?;
+    pub fn from_slice(slice: &[u8]) -> IpmiPayloadRequest {
+        let h = IpmiPayloadRequestSlice::from_slice(slice).unwrap();
         // println!("{:x?}", h);
         // Ok(h.to_header())
-        Ok((h.to_header(), &slice[h.slice().len()..]))
+        h.to_header()
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
