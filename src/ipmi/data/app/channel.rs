@@ -1,5 +1,10 @@
-use crate::ipmi::payload::ipmi_payload_request::Data;
+// use crate::ipmi::data::data::Data;
 
+use std::fmt::Debug;
+
+use crate::ipmi::data::data::Data;
+
+#[derive(Debug, Eq, PartialEq, Hash)]
 pub struct GetChannelAuthCapabilitiesRequest {
     pub channel_version: bool,
     pub channel_number: u8,
@@ -7,7 +12,7 @@ pub struct GetChannelAuthCapabilitiesRequest {
 }
 
 impl GetChannelAuthCapabilitiesRequest {
-    pub fn from_slice(slice: &[u8]) -> GetChannelAuthCapabilitiesRequest {
+    pub fn from_slice(_slice: &[u8]) -> GetChannelAuthCapabilitiesRequest {
         // todo: add error checking
         GetChannelAuthCapabilitiesRequest {
             channel_version: true,
@@ -20,7 +25,7 @@ impl GetChannelAuthCapabilitiesRequest {
 impl Data for GetChannelAuthCapabilitiesRequest {}
 
 pub struct GetChannelAuthCapabilitiesResponse {}
-
+#[derive(Debug, Eq, PartialEq, Hash)]
 pub enum Privilege {
     Reserved,
     Callback,

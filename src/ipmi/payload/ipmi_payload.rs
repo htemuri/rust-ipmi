@@ -1,41 +1,39 @@
-// use super::ipmi_payload_request::IpmiV1Payload;
+use bitvec::{field::BitField, order::Msb0, slice::BitSlice};
 
-// pub enum IpmiPayload {
-//     V1_5(Ip),
-//     // V2_0(IpmiV2Payload),
-// }
+use super::ipmi_payload_request::IpmiPayloadRequest;
 
-// impl IpmiPayload
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+pub enum IpmiPayload {
+    Request(IpmiPayloadRequest),
+    // Response(IpmiPayloadResponse)
+}
 
-// pub enum NetFn {
-//     Chassis(CommandType),
-//     Bridge(CommandType),
-//     SensorEvent(CommandType),
-//     App(CommandType),
-//     Firmware(CommandType),
-//     Storage(CommandType),
-//     Transport(CommandType),
-//     Reserved,
-// }
+impl IpmiPayload {
+    pub const PAYLOAD_MAX_LEN: usize = 0xff;
 
-// impl NetFn {
-//     pub fn from_u8(fn_code: u8) -> NetFn {
-//         if &fn_code % 2 == 0 {
-//             match fn_code {
-//                 0x06 => NetFn::App(CommandType::Request),
-//                 _ => NetFn::App(CommandType::Request),
-//             }
-//         } else {
-//             match fn_code {
-//                 0x07 => NetFn::App(CommandType::Response),
-//                 _ => NetFn::App(CommandType::Response),
-//             }
-//         }
-//     }
-// }
+    pub fn from_slice(slice: &[u8]) -> IpmiPayload {
+        let netfn_rqlun: &BitSlice<u8, Msb0> = BitSlice::<u8, Msb0>::from_element(&slice[1]);
+        let netfn_slice = &netfn_rqlun[0..6];
+        let netfn = netfn_slice[..].load::<u8>();
+        let command_type = CommandType::from_u8(netfn);
 
-// use crate::ipmi::data::netfn::CommandType;
+        match command_type {
+            CommandType::Request => IpmiPayload::Request(IpmiPayloadRequest::from_slice(slice)),
+            _ => {
+                todo!()
+            }
+        }
+    }
 
+    pub fn to_bytes(&self) -> Vec<u8> {
+        match self {
+            IpmiPayload::Request(payload) => payload.to_bytes(),
+            // IpmiPayload::Response(header) => header.to_bytes(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum NetFn {
     Chassis,
     Bridge,
@@ -104,11 +102,23 @@ impl NetFn {
     }
 }
 
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum CommandType {
     Request,
     Response,
 }
 
+impl CommandType {
+    pub fn from_u8(netfn: u8) -> CommandType {
+        match netfn % 2 {
+            0 => CommandType::Request,
+            1 => CommandType::Response,
+            _ => CommandType::Request,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum Lun {
     Bmc,
     Oem1,
@@ -138,6 +148,7 @@ impl Lun {
     }
 }
 
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum AddrType {
     SlaveAddress,
     SoftwareId,
@@ -150,8 +161,15 @@ impl AddrType {
             true => AddrType::SoftwareId,
         }
     }
-}
 
+    pub fn to_u8(&self) -> u8 {
+        match self {
+            AddrType::SlaveAddress => 0,
+            AddrType::SoftwareId => 1,
+        }
+    }
+}
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum SoftwareType {
     Bios,
     SmiHandler,
@@ -159,7 +177,7 @@ pub enum SoftwareType {
     Oem,
     RemoteConsoleSoftware(u8),
     TerminalModeRemoteConsole,
-    Reserved,
+    Reserved(u8),
 }
 
 impl SoftwareType {
@@ -171,11 +189,23 @@ impl SoftwareType {
             0x30..=0x3F => SoftwareType::Oem,
             0x40..=0x46 => SoftwareType::RemoteConsoleSoftware(software_id - 0x3F),
             0x47 => SoftwareType::TerminalModeRemoteConsole,
-            _ => SoftwareType::Reserved,
+            _ => SoftwareType::Reserved(software_id),
+        }
+    }
+
+    pub fn to_u8(&self) -> u8 {
+        match self {
+            SoftwareType::Bios => 0x00,
+            SoftwareType::SmiHandler => 0x10,
+            SoftwareType::SystemManagementSoftware => 0x20,
+            SoftwareType::Oem => 0x30,
+            SoftwareType::RemoteConsoleSoftware(a) => *a + 0x3F,
+            SoftwareType::TerminalModeRemoteConsole => 0x47,
+            SoftwareType::Reserved(a) => *a,
         }
     }
 }
-
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum SlaveAddress {
     Bmc,
     Unknown(u8),
@@ -186,6 +216,13 @@ impl SlaveAddress {
         match slave_address {
             0x20 => SlaveAddress::Bmc,
             _ => SlaveAddress::Unknown(slave_address),
+        }
+    }
+
+    pub fn to_u8(&self) -> u8 {
+        match self {
+            SlaveAddress::Bmc => 0x20,
+            SlaveAddress::Unknown(a) => *a,
         }
     }
 }
