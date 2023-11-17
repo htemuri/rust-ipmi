@@ -7,6 +7,7 @@ use super::{
     ipmi_payload_request::IpmiPayloadRequest,
 };
 
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct IpmiPayloadRequestSlice<'a> {
     slice: &'a [u8],
 }
@@ -102,22 +103,24 @@ impl<'a> IpmiPayloadRequestSlice<'a> {
 
     // return the data slice as a vector
     pub fn data(&self) -> Vec<u8> {
-        Vec::from(&self.slice()[7..&self.slice().len() - 1])
+        let len = self.slice().len() - 1;
+        // println!("{}", self.slice().len());
+        Vec::from(&self.slice()[6..len])
     }
 
     pub fn to_header(&self) -> IpmiPayloadRequest {
         IpmiPayloadRequest {
-            rs_addr_type: AddrType::SlaveAddress,
-            rs_slave_address_type: Some(SlaveAddress::Bmc),
-            rs_software_type: None,
-            net_fn: NetFn::App,
-            rs_lun: Lun::Bmc,
-            rq_addr_type: AddrType::SoftwareId,
-            rq_slave_address_type: None,
-            rq_software_type: Some(SoftwareType::RemoteConsoleSoftware(1)),
-            rq_sequence: 0x00,
-            rq_lun: Lun::Bmc,
-            command: Command::GetChannelAuthCapabilities,
+            rs_addr_type: self.rs_addr_type(),
+            rs_slave_address_type: self.rs_slave_address_type(),
+            rs_software_type: self.rs_software_type(),
+            net_fn: self.net_fn(),
+            rs_lun: self.rs_lun(),
+            rq_addr_type: self.rq_addr_type(),
+            rq_slave_address_type: self.rq_slave_address_type(),
+            rq_software_type: self.rq_software_type(),
+            rq_sequence: self.rq_sequence(),
+            rq_lun: self.rq_lun(),
+            command: self.command(),
             data: self.data(),
         }
     }

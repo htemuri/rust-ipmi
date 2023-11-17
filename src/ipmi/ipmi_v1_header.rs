@@ -43,7 +43,7 @@ impl IpmiV1Header {
 
     pub fn from_slice(slice: &[u8]) -> Result<(IpmiV1Header, &[u8]), std::io::ErrorKind> {
         let h = IpmiV1HeaderSlice::from_slice(slice)?;
-        println!("{:x?}", h);
+        // println!("{:x?}", h);
         Ok((h.to_header(), &slice[h.slice().len()..]))
     }
 

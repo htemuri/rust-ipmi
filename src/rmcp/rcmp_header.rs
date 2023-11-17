@@ -26,9 +26,9 @@ impl RmcpHeader {
         }
     }
 
-    pub fn from_slice(slice: &[u8]) -> Result<(RmcpHeader, &[u8]), std::io::ErrorKind> {
-        let h = RmcpHeaderSlice::from_slice(slice)?;
-        Ok((h.to_header(), &slice[h.slice().len()..]))
+    pub fn from_slice(slice: &[u8]) -> RmcpHeader {
+        let h = RmcpHeaderSlice::from_slice(slice);
+        h.to_header()
     }
 
     pub fn to_bytes(&self) -> [u8; RmcpHeader::MAX_LEN] {

@@ -60,7 +60,8 @@ impl Connection {
         println!("Awaiting responses...");
         while let Ok((n, addr)) = self.client_socket.recv_from(&mut recv_buff) {
             println!("{} bytes response from {:?}", n, addr);
-            println!("{:x?}", Packet::from_slice(&recv_buff, n));
+            println!("{:x?}", &recv_buff[..n]);
+            // println!("{:x?}", Packet::from_slice(&recv_buff, n));
         }
     }
 }

@@ -14,45 +14,43 @@ use crate::{
 };
 
 fn main() {
-    let dest_ip = String::from("192.168.88.10");
-    let rmcp_port = String::from("623");
+    // let dest_ip = String::from("192.168.88.10");
+    // let rmcp_port = String::from("623");
 
-    let rmcp_packet = RmcpHeader::from_slice(&[0x6, 0x0, 0xff, 0x7]);
+    // let rmcp_packet = RmcpHeader::from_slice(&[0x6, 0x0, 0xff, 0x7]);
 
-    let test = rmcp_packet.unwrap().0.to_bytes();
+    // let test = rmcp_packet.to_bytes();
 
-    let ipmi_header =
-        IpmiV1Header::from_slice(&[0x00, 0x00, 0x00, 0x00, 0x00, 0x0, 0x0, 0x0, 0x0, 0x9]);
+    // let ipmi_header =
+    //     IpmiV1Header::from_slice(&[0x00, 0x00, 0x00, 0x00, 0x00, 0x0, 0x0, 0x0, 0x0, 0x9]);
 
-    println!("{:x?}", ipmi_header);
+    // println!("{:x?}", ipmi_header);
 
-    /*
-    IPMI V1.5 packet
-    18 66 da bf 88 9a a8 a1 59 3d a9 35 08 00 45 00 00 33 47 4d 40 00 40 11 c1 13 c0 a8 58 fe c0 a8 58 0a a8 d5 02 6f 00 1f 32 8a 06 00 ff 07 00 00 00 00 00 00 00 00 00 09 20 18 c8 81 00 38 8e 04 b5
+    // /*
+    // IPMI V1.5 packet
+    // 18 66 da bf 88 9a a8 a1 59 3d a9 35 08 00 45 00 00 33 47 4d 40 00 40 11 c1 13 c0 a8 58 fe c0 a8 58 0a a8 d5 02 6f 00 1f 32 8a 06 00 ff 07 00 00 00 00 00 00 00 00 00 09 20 18 c8 81 00 38 8e 04 b5
 
+    // IPMI V2 packet
+    // 18 66 da bf 88 9a a8 a1 59 3d a9 35 08 00 45 00 00 36 47 4e 40 00 40 11 c1 0f c0 a8 58 fe c0 a8 58 0a a8 d5 02 6f 00 22 32 8d 06 00 ff 07
+    // 06 00 00 00 00 00 00 00 00 00 0a 00
+    // 20 18 c8 81 04 54 0e 00 80 99
 
-    IPMI V2 packet
-    18 66 da bf 88 9a a8 a1 59 3d a9 35 08 00 45 00 00 36 47 4e 40 00 40 11 c1 0f c0 a8 58 fe c0 a8 58 0a a8 d5 02 6f 00 22 32 8d 06 00 ff 07
-    06 00 00 00 00 00 00 00 00 00 0a 00
-    20 18 c8 81 04 54 0e 00 80 99
+    //  */
+    // let test = ipmi_header.unwrap().0.to_bytes();
 
-     */
+    // println!("{:x?}", test);
 
-    let test = ipmi_header.unwrap().0.to_bytes();
+    // let ipmiv2header =
+    //     IpmiV2Header::from_slice(&[0x6, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xa, 0x0]);
 
-    println!("{:x?}", test);
+    // println!("{:x?}", ipmiv2header);
 
-    let ipmiv2header =
-        IpmiV2Header::from_slice(&[0x6, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xa, 0x0]);
+    // println!("{:x?}", u16::from_le_bytes([0xa, 0x00]));
 
-    println!("{:x?}", ipmiv2header);
-
-    println!("{:x?}", u16::from_le_bytes([0xa, 0x00]));
-
-    for x in 0x10..=0x1F {
-        print!("{:x?}, ", x)
-    }
-    println!();
+    // for x in 0x10..=0x1F {
+    //     print!("{:x?}, ", x)
+    // }
+    // println!();
 
     let connection = Connection::new(Ipv4Addr::from([192, 168, 88, 10]));
     let slice = [

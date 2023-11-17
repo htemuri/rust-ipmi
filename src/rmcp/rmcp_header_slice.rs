@@ -13,12 +13,12 @@ pub struct RmcpHeaderSlice<'a> {
 
 impl<'a> RmcpHeaderSlice<'a> {
     // creates a slice containing an rmcp header
-    pub fn from_slice(slice: &'a [u8]) -> Result<RmcpHeaderSlice<'a>, std::io::ErrorKind> {
+    pub fn from_slice(slice: &'a [u8]) -> RmcpHeaderSlice<'a> {
         // todo: implement error checking
 
-        Ok(RmcpHeaderSlice::<'a> {
+        RmcpHeaderSlice::<'a> {
             slice: unsafe { core::slice::from_raw_parts(slice.as_ptr(), 4) },
-        })
+        }
     }
 
     pub fn slice(&self) -> &'a [u8] {

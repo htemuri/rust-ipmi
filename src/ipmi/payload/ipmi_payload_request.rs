@@ -83,7 +83,7 @@ impl IpmiPayloadRequest {
     // returns the payload as an object and the length of the payload
     pub fn from_slice(slice: &[u8]) -> IpmiPayloadRequest {
         let h = IpmiPayloadRequestSlice::from_slice(slice).unwrap();
-        // println!("{:x?}", h);
+        println!("{:x?}", h.to_header());
         // Ok(h.to_header())
         h.to_header()
     }

@@ -18,16 +18,22 @@ impl Packet {
             IpmiHeader::from_slice(&slice[4..IpmiHeader::header_len(slice[0], slice[1])]);
         let payload_length = ipmi_header.payload_len();
         Packet {
-            rmcp_header: RmcpHeader::from_slice(&slice[..3]).unwrap().0,
+            rmcp_header: RmcpHeader::from_slice(&slice[..3]),
             ipmi_header: IpmiHeader::from_slice(
                 &slice[4..IpmiHeader::header_len(slice[0], slice[1])],
             ),
             ipmi_payload: {
                 match payload_length {
                     0 => None,
-                    _ => Some(IpmiPayload::from_slice(
-                        &slice[(&slice.len() - nbytes - payload_length)..],
-                    )),
+                    _ => {
+                        // println!("{:x?}", &slice[(&slice.len() - payload_length)..]);
+                        // println!("{:?}", &slice.len());
+                        // println!("{:?}", nbytes);
+                        // println!("{:?}", payload_length);
+                        Some(IpmiPayload::from_slice(
+                            &slice[(nbytes - payload_length)..nbytes],
+                        ))
+                    }
                 }
             },
         }
