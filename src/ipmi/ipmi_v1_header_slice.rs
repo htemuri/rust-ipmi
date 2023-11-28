@@ -80,8 +80,8 @@ impl<'a> IpmiV1HeaderSlice<'a> {
             auth_code: {
                 // if let auth_type = AuthType::None {}
                 match AuthType::from_u8(self.auth_type()) {
-                    AuthType::None => 0x00,
-                    _ => self.auth_code(),
+                    AuthType::None => None,
+                    _ => Some(self.auth_code()),
                 }
             },
             payload_length: self.payload_length(),

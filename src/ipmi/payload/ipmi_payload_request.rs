@@ -120,7 +120,7 @@ impl IpmiPayloadRequest {
                     },
                 }
             },
-            1,
+            2,
         );
         let rq_seq_rq_lun = Self::join_two_bits_to_byte(self.rq_sequence, self.rs_lun.to_u8(), 6);
         let command_code = self.command.to_u8();

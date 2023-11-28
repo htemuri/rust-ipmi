@@ -10,7 +10,7 @@ pub struct IpmiV1Header {
     pub auth_type: AuthType,
     pub session_seq_number: u32,
     pub session_id: u32,
-    pub auth_code: u128,
+    pub auth_code: Option<u128>,
     pub payload_length: u8,
 }
 
@@ -20,7 +20,7 @@ impl Default for IpmiV1Header {
             auth_type: AuthType::None,
             session_seq_number: 0x00,
             session_id: 0x00,
-            auth_code: 0x00,
+            auth_code: None,
             payload_length: 0,
         }
     }
@@ -36,7 +36,7 @@ impl IpmiV1Header {
             auth_type,
             session_seq_number,
             session_id,
-            auth_code: 0,
+            auth_code: None,
             payload_length: 0,
         }
     }
@@ -71,7 +71,7 @@ impl IpmiV1Header {
             _ => {
                 let seq_be = self.session_seq_number.to_be_bytes();
                 let ses_be = self.session_id.to_be_bytes();
-                let auth_be = self.auth_code.to_be_bytes();
+                let auth_be = self.auth_code.unwrap().to_be_bytes();
                 let mut result = ArrayVec::new();
                 result.extend([
                     self.auth_type.to_u8(),

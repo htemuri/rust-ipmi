@@ -1,4 +1,4 @@
-use crate::ipmi::payload::ipmi_payload::NetFn;
+use crate::ipmi::payload::ipmi_payload::{CommandType, NetFn};
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum Command {
@@ -85,19 +85,16 @@ impl Command {
             _ => Command::Reserved,
         }
     }
+
+    pub fn action(&self, command_type: CommandType) {
+        // match command to command function
+
+        // match self {
+        //     Command::GetChannelAuthCapabilities => {
+        //         match command_type {
+        //             CommandType::Request =>
+        //         }
+        //     }
+        // }
+    }
 }
-
-// pub fn data_from_slice(command: Command, slice: &[u8]) -> Option<Box<dyn Data>> {
-//     match command {
-//         Command::GetChannelAuthCapabilities => Some(Box::new(
-//             GetChannelAuthCapabilitiesRequest::from_slice(slice),
-//         )),
-//     }
-// }
-
-// //
-
-// pub trait Data {
-//     fn to_bytes(&self) -> ArrayVec<u8, 8092>;
-//     fn from_slice<T>(slice: &[u8]) -> Result<T, std::io::ErrorKind>;
-// }

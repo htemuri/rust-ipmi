@@ -1,6 +1,9 @@
 use crate::{
     ipmi::{
-        ipmi_header::IpmiHeader, ipmi_v1_header::IpmiV1Header, payload::ipmi_payload::IpmiPayload,
+        self,
+        ipmi_header::{self, IpmiHeader},
+        ipmi_v1_header::IpmiV1Header,
+        payload::ipmi_payload::{self, IpmiPayload},
     },
     rmcp::rcmp_header::RmcpHeader,
 };
@@ -13,6 +16,14 @@ pub struct Packet {
 }
 
 impl Packet {
+    pub fn new(ipmi_header: IpmiHeader, ipmi_payload: IpmiPayload) -> Packet {
+        Packet {
+            rmcp_header: RmcpHeader::default(),
+            ipmi_header,
+            ipmi_payload: Some(ipmi_payload),
+        }
+    }
+
     pub fn from_slice(slice: &[u8], nbytes: usize) -> Packet {
         let ipmi_header =
             IpmiHeader::from_slice(&slice[4..IpmiHeader::header_len(slice[0], slice[1])]);
@@ -25,15 +36,9 @@ impl Packet {
             ipmi_payload: {
                 match payload_length {
                     0 => None,
-                    _ => {
-                        // println!("{:x?}", &slice[(&slice.len() - payload_length)..]);
-                        // println!("{:?}", &slice.len());
-                        // println!("{:?}", nbytes);
-                        // println!("{:?}", payload_length);
-                        Some(IpmiPayload::from_slice(
-                            &slice[(nbytes - payload_length)..nbytes],
-                        ))
-                    }
+                    _ => Some(IpmiPayload::from_slice(
+                        &slice[(nbytes - payload_length)..nbytes],
+                    )),
                 }
             },
         }

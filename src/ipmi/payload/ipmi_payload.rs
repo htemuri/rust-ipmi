@@ -1,11 +1,12 @@
 use bitvec::{field::BitField, order::Msb0, slice::BitSlice};
 
 use super::ipmi_payload_request::IpmiPayloadRequest;
+use super::ipmi_payload_response::IpmiPayloadResponse;
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum IpmiPayload {
     Request(IpmiPayloadRequest),
-    // Response(IpmiPayloadResponse)
+    Response(IpmiPayloadResponse),
 }
 
 impl IpmiPayload {
@@ -19,16 +20,15 @@ impl IpmiPayload {
 
         match command_type {
             CommandType::Request => IpmiPayload::Request(IpmiPayloadRequest::from_slice(slice)),
-            _ => {
-                todo!()
-            }
+            // _ => todo!(),
+            CommandType::Response => IpmiPayload::Response(IpmiPayloadResponse::from_slice(slice)),
         }
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
         match self {
             IpmiPayload::Request(payload) => payload.to_bytes(),
-            // IpmiPayload::Response(header) => header.to_bytes(),
+            _ => todo!(), // IpmiPayload::Response(header) => header.to_bytes(),
         }
     }
 }
@@ -165,7 +165,7 @@ impl AddrType {
     pub fn to_u8(&self) -> u8 {
         match self {
             AddrType::SlaveAddress => 0,
-            AddrType::SoftwareId => 1,
+            AddrType::SoftwareId => 2,
         }
     }
 }
@@ -199,7 +199,7 @@ impl SoftwareType {
             SoftwareType::SmiHandler => 0x10,
             SoftwareType::SystemManagementSoftware => 0x20,
             SoftwareType::Oem => 0x30,
-            SoftwareType::RemoteConsoleSoftware(a) => *a + 0x3F,
+            SoftwareType::RemoteConsoleSoftware(a) => *a,
             SoftwareType::TerminalModeRemoteConsole => 0x47,
             SoftwareType::Reserved(a) => *a,
         }

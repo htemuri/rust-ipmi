@@ -69,7 +69,7 @@ impl IpmiHeader {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum AuthType {
     None,
     MD2,
