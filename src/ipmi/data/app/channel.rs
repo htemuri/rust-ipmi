@@ -7,7 +7,7 @@ use bitvec::prelude::*;
 use crate::{
     connection::Connection,
     ipmi::{
-        data::{self, commands::Command},
+        data::commands::Command,
         ipmi_header::{AuthType, IpmiHeader},
         ipmi_v1_header::IpmiV1Header,
         payload::{
@@ -90,7 +90,56 @@ impl GetChannelAuthCapabilitiesRequest {
 pub struct GetChannelAuthCapabilitiesResponse {
     pub channel_number: u8,
     pub auth_version: AuthVersion,
-    pub auth_type: [AuthType],
+    pub auth_type: Vec<AuthType>,
+    pub kg_status: bool,
+    pub per_message_auth: bool,
+    pub user_level_auth: bool,
+    pub anon_login: bool,
+    pub channel_extended_cap: AuthVersion,
+    pub oem_id: u16,
+    pub oem_aux_data: u8,
+}
+
+impl GetChannelAuthCapabilitiesResponse {
+    pub fn from_slice(slice: &[u8]) -> GetChannelAuthCapabilitiesResponse {
+        GetChannelAuthCapabilitiesResponse {
+            channel_number: { slice[0] },
+            auth_version: {
+                let bv = BitSlice::<u8, Msb0>::from_element(&slice[1]);
+                AuthVersion::from_bool(bv[0])
+            },
+            auth_type: {
+                let bv = BitSlice::<u8, Msb0>::from_element(&slice[1]);
+                let mut result = vec![];
+                if bv[2] {
+                    result.push(AuthType::OEM)
+                }
+                if bv[3] {
+                    result.push(AuthType::PasswordOrKey)
+                }
+                if bv[4] {
+                    result.push(AuthType::Reserved)
+                }
+                if bv[5] {
+                    result.push(AuthType::MD5)
+                }
+                if bv[6] {
+                    result.push(AuthType::MD2)
+                }
+                if bv[7] {
+                    result.push(AuthType::None)
+                }
+                result
+            },
+            kg_status: { todo!() },
+            per_message_auth: todo!(),
+            user_level_auth: todo!(),
+            anon_login: todo!(),
+            channel_extended_cap: todo!(),
+            oem_id: todo!(),
+            oem_aux_data: todo!(),
+        }
+    }
 }
 
 pub enum AuthVersion {

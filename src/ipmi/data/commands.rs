@@ -1,4 +1,4 @@
-use crate::ipmi::payload::ipmi_payload::{CommandType, NetFn};
+use crate::ipmi::payload::ipmi_payload::NetFn;
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum Command {
@@ -86,15 +86,15 @@ impl Command {
         }
     }
 
-    pub fn action(&self, command_type: CommandType) {
-        // match command to command function
+    // pub fn action(&self, command_type: CommandType) {
+    //     // match command to command function
 
-        // match self {
-        //     Command::GetChannelAuthCapabilities => {
-        //         match command_type {
-        //             CommandType::Request =>
-        //         }
-        //     }
-        // }
-    }
+    //     // match self {
+    //     //     Command::GetChannelAuthCapabilities => {
+    //     //         match command_type {
+    //     //             CommandType::Request =>
+    //     //         }
+    //     //     }
+    //     // }
+    // }
 }

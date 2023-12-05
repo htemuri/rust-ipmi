@@ -1,4 +1,4 @@
-use bitvec::prelude::*;
+// use bitvec::prelude::*;
 
 use crate::ipmi::{
     data::commands::Command, payload::ipmi_payload_response_slice::IpmiPayloadResponseSlice,

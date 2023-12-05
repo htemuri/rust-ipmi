@@ -75,7 +75,7 @@ impl Connection {
                     .send(&discovery_req.to_bytes())
                     .expect("couldn't send message");
                 let mut recv_buff = [0; 8092];
-                if let Ok((n, addr)) = self.client_socket.recv_from(&mut recv_buff) {
+                if let Ok((n, _addr)) = self.client_socket.recv_from(&mut recv_buff) {
                     let response = Packet::from_slice(&recv_buff, n);
                     if let Some(IpmiPayload::Response(payload)) = response.ipmi_payload {
                         println!("{:?}", payload);
@@ -91,7 +91,7 @@ impl Connection {
         }
     }
 
-    fn handle_completion_code(
+    fn _handle_completion_code(
         &self,
         response_payload: IpmiPayloadResponse,
         completion_code: CompletionCode,

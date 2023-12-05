@@ -1,9 +1,6 @@
 use crate::{
     ipmi::{
-        self,
-        ipmi_header::{self, IpmiHeader},
-        ipmi_v1_header::IpmiV1Header,
-        payload::ipmi_payload::{self, IpmiPayload},
+        ipmi_header::IpmiHeader, ipmi_v1_header::IpmiV1Header, payload::ipmi_payload::IpmiPayload,
     },
     rmcp::rcmp_header::RmcpHeader,
 };
