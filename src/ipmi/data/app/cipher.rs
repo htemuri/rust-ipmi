@@ -1,8 +1,18 @@
+use crate::ipmi::data::commands::Command;
 use crate::{
-    connection::Connection, helpers::utils::join_two_bits_to_byte,
-    ipmi::ipmi_v2_header::PayloadType, packet::packet::Packet,
+    connection::Connection,
+    helpers::utils::join_two_bits_to_byte,
+    ipmi::{
+        ipmi_header::{AuthType, IpmiHeader},
+        ipmi_v2_header::{IpmiV2Header, PayloadType},
+        payload::{
+            ipmi_payload::{IpmiPayload, NetFn},
+            ipmi_payload_request::IpmiPayloadRequest,
+        },
+    },
+    packet::packet::Packet,
 };
-use bitvec::prelude::*;
+use bitvec::{prelude::*, vec};
 
 pub struct GetChannelCipherSuitesRequest {
     pub channel_number: u8,
@@ -47,23 +57,80 @@ impl GetChannelCipherSuitesRequest {
         session_id: u32,
         auth_code: Option<u128>,
     ) -> Packet {
-        todo!();
-        // let data_bytes = self.to_bytes();
+        let data_bytes = self.to_bytes();
         // println!("{:x?}", data_bytes);
-        // let packet = Packet::new(
-        //     IpmiHeader::V1_5(IpmiV1Header {
-        //         auth_type: con.auth_type,
-        //         session_seq_number,
-        //         session_id,
-        //         auth_code,
-        //         payload_length: (data_bytes.len() as u8) + 7,
-        //     }),
-        //     IpmiPayload::Request(IpmiPayloadRequest::new(
-        //         NetFn::App,
-        //         Command::GetChannelAuthCapabilities,
-        //         data_bytes,
-        //     )),
-        // );
-        // packet
+        let packet = Packet::new(
+            IpmiHeader::V2_0(IpmiV2Header {
+                auth_type: con.auth_type,
+                payload_enc: false,
+                payload_auth: false,
+                payload_type: PayloadType::IPMI,
+                oem_iana: None,
+                oem_payload_id: None,
+                rmcp_plus_session_id: 0x0,
+                session_seq_number: 0x0,
+                payload_length: ((data_bytes.len() as u8) + 7).try_into().unwrap(),
+            }),
+            IpmiPayload::Request(IpmiPayloadRequest::new(
+                NetFn::App,
+                Command::GetChannelCipherSuites,
+                data_bytes,
+            )),
+        );
+        packet
+    }
+}
+
+impl Default for GetChannelCipherSuitesRequest {
+    fn default() -> Self {
+        GetChannelCipherSuitesRequest {
+            channel_number: 0xe,
+            payload_type: PayloadType::IPMI,
+            list_algo_cipher_suite: true,
+            list_index: 0x0,
+        }
+    }
+}
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+pub struct GetChannelCipherSuitesResponse {
+    /*
+    2 bytes Channel Number
+    Channel number that the Authentication Algorithms are being returned
+    for. If the channel number in the request was set to Eh, this will return
+    the channel number for the channel that the request was received on.
+
+    (3:18) bytes Cipher Suite Record data bytes, per Table 22-19, Cipher Suite Record
+    Format. Record data is ‘packed’; there are no pad bytes between records. It is
+    possible that record data will span across multiple List Index values.
+    The BMC returns sixteen (16) bytes at a time per index, starting from index
+    00h, until the list data is exhausted, at which point it will 0 bytes or <16 bytes
+    of list data.
+     */
+    pub channel_number: u8,
+    pub cypher_suite_record_data_bytes: Vec<u8>,
+}
+
+impl GetChannelCipherSuitesResponse {
+    pub fn from_slice(slice: &[u8]) -> GetChannelCipherSuitesResponse {
+        GetChannelCipherSuitesResponse {
+            channel_number: slice[0],
+            cypher_suite_record_data_bytes: {
+                let mut vec = Vec::new();
+                vec.extend_from_slice(&slice[1..]);
+                vec
+            },
+        }
+    }
+
+    pub fn is_last(&self) -> bool {
+        if self.cypher_suite_record_data_bytes.len() < 16 {
+            println!(
+                "cipher len: {:?}",
+                self.cypher_suite_record_data_bytes.len()
+            );
+            return true;
+        } else {
+            return false;
+        }
     }
 }

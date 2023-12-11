@@ -61,7 +61,7 @@ pub enum Command {
     // GetChannelPayloadVersion,
     // GetChannelOEMPayloadInfo,
     // MasterWriteRead,
-    // GetChannelCipherSuites,
+    GetChannelCipherSuites,
     // SuspendResumePayloadEncryption,
     // SetChannelSecurityKeys,
     // GetSystemInterfaceCapabilities,
@@ -72,6 +72,7 @@ impl Command {
     pub fn to_u8(&self) -> u8 {
         match self {
             Command::GetChannelAuthCapabilities => 0x38,
+            Command::GetChannelCipherSuites => 0x54,
             Command::Reserved => 0x00,
         }
     }
@@ -80,6 +81,7 @@ impl Command {
         match net_fn {
             NetFn::App => match command_code {
                 0x38 => Command::GetChannelAuthCapabilities,
+                0x54 => Command::GetChannelCipherSuites,
                 _ => Command::Reserved,
             },
             _ => Command::Reserved,

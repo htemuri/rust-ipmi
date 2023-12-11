@@ -11,6 +11,7 @@ pub struct IpmiV2HeaderSlice<'a> {
 
 impl<'a> IpmiV2HeaderSlice<'a> {
     pub fn from_slice(slice: &'a [u8]) -> Result<IpmiV2HeaderSlice<'a>, std::io::ErrorKind> {
+        println!("slice ipmi v2 header: {:x?}", slice);
         // todo: implement error checking
         Ok(IpmiV2HeaderSlice::<'a> {
             slice: unsafe { core::slice::from_raw_parts(slice.as_ptr(), slice.len()) },
@@ -43,19 +44,22 @@ impl<'a> IpmiV2HeaderSlice<'a> {
         )
     }
 
-    pub fn oem_iana(&self) -> u32 {
+    pub fn oem_iana(&self) -> Option<u32> {
         match self.payload_type() {
-            PayloadType::OEM => {
-                u32::from_be_bytes([self.slice[2], self.slice[3], self.slice[4], self.slice[5]])
-            }
-            _ => 0x0,
+            PayloadType::OEM => Some(u32::from_be_bytes([
+                self.slice[2],
+                self.slice[3],
+                self.slice[4],
+                self.slice[5],
+            ])),
+            _ => None,
         }
     }
 
-    pub fn oem_payload_id(&self) -> u16 {
+    pub fn oem_payload_id(&self) -> Option<u16> {
         match self.payload_type() {
-            PayloadType::OEM => u16::from_be_bytes([self.slice[6], self.slice[7]]),
-            _ => 0x0,
+            PayloadType::OEM => Some(u16::from_be_bytes([self.slice[6], self.slice[7]])),
+            _ => None,
         }
     }
 

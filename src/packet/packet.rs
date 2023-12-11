@@ -21,15 +21,15 @@ impl Packet {
         }
     }
 
-    pub fn from_slice(slice: &[u8], nbytes: usize) -> Packet {
-        let ipmi_header =
-            IpmiHeader::from_slice(&slice[4..IpmiHeader::header_len(slice[0], slice[1])]);
+    pub fn from_slice(slice: &[u8]) -> Packet {
+        let nbytes: usize = slice.len();
+        let ipmi_header_len = IpmiHeader::header_len(slice[4], slice[5]);
+        let ipmi_header = IpmiHeader::from_slice(&slice[4..(ipmi_header_len + 4)]);
         let payload_length = ipmi_header.payload_len();
+        println!("payload length: {:x?}", payload_length);
         Packet {
             rmcp_header: RmcpHeader::from_slice(&slice[..3]),
-            ipmi_header: IpmiHeader::from_slice(
-                &slice[4..IpmiHeader::header_len(slice[0], slice[1])],
-            ),
+            ipmi_header: IpmiHeader::from_slice(&slice[4..(ipmi_header_len + 4)]),
             ipmi_payload: {
                 match payload_length {
                     0 => None,

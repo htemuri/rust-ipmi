@@ -3,11 +3,17 @@ use std::net::{Ipv4Addr, UdpSocket};
 use crate::{
     ipmi::{
         data::{
-            app::channel::{self, GetChannelAuthCapabilitiesRequest},
+            app::{
+                channel::{
+                    self, GetChannelAuthCapabilitiesRequest, GetChannelAuthCapabilitiesResponse,
+                },
+                cipher::{GetChannelCipherSuitesRequest, GetChannelCipherSuitesResponse},
+            },
             commands::Command,
         },
         ipmi_header::AuthType,
         payload::{
+            self,
             ipmi_payload::IpmiPayload,
             ipmi_payload_response::{CompletionCode, IpmiPayloadResponse},
         },
@@ -17,6 +23,7 @@ use crate::{
 
 pub struct Connection {
     pub state: State,
+    cipher_list_index: u8,
     pub client_socket: UdpSocket,
     pub ipmi_server_ip_addr: Ipv4Addr,
     pub auth_type: AuthType,
@@ -42,6 +49,7 @@ impl Connection {
                     .expect(format!("Can't connect to {}:{}", ipmi_server_ip_addr, &623).as_str());
                 socket
             },
+            cipher_list_index: 0,
             ipmi_server_ip_addr,
             username: None,
             password_encrypted: None,
@@ -56,6 +64,7 @@ impl Connection {
     ) -> Connection {
         Connection {
             state: State::Discovery,
+            cipher_list_index: 0,
             client_socket: { UdpSocket::bind("0.0.0.0:5000").expect("Can't bind to the port") },
             ipmi_server_ip_addr,
             username: Some(username),
@@ -64,65 +73,120 @@ impl Connection {
         }
     }
 
-    pub fn establish_connection(&self) -> &Connection {
-        match self.auth_type {
-            AuthType::None => {
-                let discovery_req =
-                    GetChannelAuthCapabilitiesRequest::new(true, channel::Privilege::Administrator)
-                        .create_packet(self, 0x00, 0x00, None);
-                println!("{:?}", discovery_req);
-                self.client_socket
-                    .send(&discovery_req.to_bytes())
-                    .expect("couldn't send message");
-                let mut recv_buff = [0; 8092];
-                if let Ok((n, _addr)) = self.client_socket.recv_from(&mut recv_buff) {
-                    let response = Packet::from_slice(&recv_buff, n);
-                    if let Some(IpmiPayload::Response(payload)) = response.ipmi_payload {
-                        println!("{:?}", payload);
-                    }
-                    self
-                } else {
-                    todo!()
-                }
-            }
-            _ => {
-                todo!()
-            }
-        }
-    }
-
-    fn _handle_completion_code(
-        &self,
-        response_payload: IpmiPayloadResponse,
-        completion_code: CompletionCode,
-    ) {
-        match completion_code {
-            CompletionCode::CompletedNormally => match response_payload.command {
-                Command::GetChannelAuthCapabilities => {}
-                _ => todo!(),
-            },
-            _ => todo!(),
-        }
-        todo!()
-    }
-
-    pub fn send(&self, slice: &[u8]) {
-        let packet = Packet::from_slice(slice, slice.len());
-
+    pub fn establish_connection(&mut self) {
+        // match self.auth_type {
+        //     AuthType::None => {
+        let discovery_req =
+            GetChannelAuthCapabilitiesRequest::new(true, channel::Privilege::Administrator)
+                .create_packet(self, 0x00, 0x00, None);
+        // println!("{:?}", discovery_req);
         self.client_socket
-            .connect(format!("{}:{}", &self.ipmi_server_ip_addr, 623))
-            .expect(format!("Can't connect to {}:{}", &self.ipmi_server_ip_addr, &623).as_str());
-
-        self.client_socket
-            .send(&packet.to_bytes())
+            .send(&discovery_req.to_bytes())
             .expect("couldn't send message");
 
         let mut recv_buff = [0; 8092];
-        println!("Awaiting responses...");
-        while let Ok((n, addr)) = self.client_socket.recv_from(&mut recv_buff) {
-            println!("{} bytes response from {:?}", n, addr);
-            println!("{:x?}", &recv_buff[..n]);
-            // println!("{:x?}", Packet::from_slice(&recv_buff, n));
+
+        while let Ok((n, _addr)) = self.client_socket.recv_from(&mut recv_buff) {
+            println!("response slice: {:x?}", &recv_buff[..n]);
+            let response = Packet::from_slice(&recv_buff[..n]);
+            if let Some(IpmiPayload::Response(payload)) = response.ipmi_payload {
+                // println!("RESPONSE: {:?}", payload);
+                self.handle_completion_code(payload)
+            } else {
+                println!("Not a Response packet!")
+            }
+        }
+
+        // if let Ok((n, _addr)) = self.client_socket.recv_from(&mut recv_buff) {
+        //     let response = Packet::from_slice(&recv_buff, n);
+        //     if let Some(IpmiPayload::Response(payload)) = response.ipmi_payload {
+        //         println!("RESPONSE: {:?}", payload);
+        //         self.handle_completion_code(payload)
+        //     }
+        //     self
+        // } else {
+        //     println!("identified as not a response?");
+        //     self
+        //     // todo!()
+        // }
+        // }
+        // _ => {
+        //     todo!()
+        // }
+        // }
+    }
+
+    fn handle_completion_code(&mut self, response_payload: IpmiPayloadResponse) {
+        match response_payload.completion_code {
+            CompletionCode::CompletedNormally => match response_payload.command {
+                Command::GetChannelAuthCapabilities => {
+                    let response =
+                        GetChannelAuthCapabilitiesResponse::from_slice(&response_payload.data);
+                    println!(
+                        "printing auth type from channel response: {:x?}",
+                        response.auth_type
+                    );
+                    self.auth_type = AuthType::RmcpPlus;
+                    let cipher_packet = GetChannelCipherSuitesRequest::default()
+                        .create_packet(self, 0x0, 0x0, None);
+                    // println!("created packet");
+                    println!("FIRST CIPHER PACKET: {:x?}", cipher_packet);
+                    self.client_socket
+                        .send(&cipher_packet.to_bytes())
+                        .expect("couldn't send message");
+                    // println!("sent packet");
+                }
+                Command::GetChannelCipherSuites => {
+                    let response =
+                        GetChannelCipherSuitesResponse::from_slice(&response_payload.data);
+                    println!("{:x?}", response);
+                    match response.is_last() {
+                        false => {
+                            self.cipher_list_index += 1;
+                            let cipher_packet = GetChannelCipherSuitesRequest::new(
+                                0xe,
+                                crate::ipmi::ipmi_v2_header::PayloadType::IPMI,
+                                true,
+                                self.cipher_list_index,
+                            )
+                            .create_packet(self, 0x0, 0x0, None);
+                            // println!("reponse to cipher response: {:x?}", cipher_packet);
+                            self.client_socket
+                                .send(&cipher_packet.to_bytes())
+                                .expect("couldn't send message");
+                        }
+                        true => {
+                            println!("end of cipher suites")
+                        }
+                    }
+                }
+                _ => {
+                    println!("command of response: {:x?}", response_payload.command)
+                }
+            },
+            _ => {
+                println!("Completion code: {:x?}", response_payload.completion_code)
+            }
         }
     }
+
+    // pub fn send(&self, slice: &[u8]) {
+    //     let packet = Packet::from_slice(slice, slice.len());
+
+    //     self.client_socket
+    //         .connect(format!("{}:{}", &self.ipmi_server_ip_addr, 623))
+    //         .expect(format!("Can't connect to {}:{}", &self.ipmi_server_ip_addr, &623).as_str());
+
+    //     self.client_socket
+    //         .send(&packet.to_bytes())
+    //         .expect("couldn't send message");
+
+    //     let mut recv_buff = [0; 8092];
+    //     println!("Awaiting responses...");
+    //     while let Ok((n, addr)) = self.client_socket.recv_from(&mut recv_buff) {
+    //         println!("{} bytes response from {:?}", n, addr);
+    //         println!("{:x?}", &recv_buff[..n]);
+    //         // println!("{:x?}", Packet::from_slice(&recv_buff, n));
+    //     }
+    // }
 }

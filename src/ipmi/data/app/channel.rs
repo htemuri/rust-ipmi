@@ -52,7 +52,7 @@ impl GetChannelAuthCapabilitiesRequest {
             let mut bv: BitVec<u8, Msb0> = bitvec![u8, Msb0; 0;8];
             *bv.get_mut(0).unwrap() = self.channel_version;
             bv[4..].store::<u8>(self.channel_number);
-            println!("{:?}", bv);
+            // println!("{:?}", bv);
             let channel_number = bv[..].load::<u8>();
             channel_number
         });
@@ -68,7 +68,7 @@ impl GetChannelAuthCapabilitiesRequest {
         auth_code: Option<u128>,
     ) -> Packet {
         let data_bytes = self.to_bytes();
-        println!("{:x?}", data_bytes);
+        // println!("{:x?}", data_bytes);
         let packet = Packet::new(
             IpmiHeader::V1_5(IpmiV1Header {
                 auth_type: con.auth_type,
@@ -91,12 +91,12 @@ pub struct GetChannelAuthCapabilitiesResponse {
     pub channel_number: u8,
     pub auth_version: AuthVersion,
     pub auth_type: Vec<AuthType>,
-    pub kg_status: bool,
+    pub kg_status: KG,
     pub per_message_auth: bool,
     pub user_level_auth: bool,
-    pub anon_login: bool,
+    pub anon_login: AnonLogin,
     pub channel_extended_cap: AuthVersion,
-    pub oem_id: u16,
+    pub oem_id: u32, // 3 bytes not 4
     pub oem_aux_data: u8,
 }
 
@@ -131,13 +131,112 @@ impl GetChannelAuthCapabilitiesResponse {
                 }
                 result
             },
-            kg_status: { todo!() },
-            per_message_auth: todo!(),
-            user_level_auth: todo!(),
-            anon_login: todo!(),
-            channel_extended_cap: todo!(),
-            oem_id: todo!(),
-            oem_aux_data: todo!(),
+            kg_status: {
+                let bv = BitSlice::<u8, Msb0>::from_element(&slice[2]);
+                KG::from_bool(bv[2])
+            },
+            per_message_auth: {
+                let bv = BitSlice::<u8, Msb0>::from_element(&slice[2]);
+                !bv[3]
+            },
+            user_level_auth: {
+                let bv = BitSlice::<u8, Msb0>::from_element(&slice[2]);
+                !bv[4]
+            },
+            anon_login: {
+                let bv = BitSlice::<u8, Msb0>::from_element(&slice[2]);
+                AnonLogin::new(
+                    AnonStatus::from_bool(bv[5]),
+                    AnonStatus::from_bool(bv[6]),
+                    AnonStatus::from_bool(bv[7]),
+                )
+            },
+            channel_extended_cap: {
+                let bv = BitSlice::<u8, Msb0>::from_element(&slice[3]);
+                AuthVersion::from_bool(bv[6])
+            },
+            oem_id: u32::from_le_bytes([0, slice[4], slice[5], slice[6]]),
+            oem_aux_data: slice[7],
+        }
+    }
+}
+
+pub enum KG {
+    /*
+        0b = KG is set to default (all 0’s). User key KUID will be used in place of
+        KG in RAKP. (Knowledge of KG not required for activating session.)
+        1b = KG is set to non-zero value. (Knowledge of both KG and user
+        password (if not anonymous login) required for activating session.)
+    */
+    Defualt,
+    NonZero,
+}
+impl KG {
+    pub fn to_bool(&self) -> bool {
+        match self {
+            KG::Defualt => false,
+            KG::NonZero => true,
+        }
+    }
+    pub fn from_bool(flag: bool) -> KG {
+        match flag {
+            false => KG::Defualt,
+            true => KG::NonZero,
+        }
+    }
+}
+
+pub struct AnonLogin {
+    /*
+        1b = Non-null usernames enabled. (One or more users are enabled
+        that have non-null usernames).
+        1b = Null usernames enabled (One or more users that have a null
+        username, but non-null password, are presently enabled)
+        1b = Anonymous Login enabled (A user that has
+    */
+    pub non_null_username: AnonStatus,
+    pub null_username: AnonStatus,
+    pub anonymous_login: AnonStatus,
+}
+
+impl AnonLogin {
+    pub fn new(
+        non_null_username: AnonStatus,
+        null_username: AnonStatus,
+        anonymous_login: AnonStatus,
+    ) -> AnonLogin {
+        AnonLogin {
+            non_null_username,
+            null_username,
+            anonymous_login,
+        }
+    }
+
+    pub fn to_bits(&self) -> [bool; 3] {
+        return [
+            self.non_null_username.to_bool(),
+            self.null_username.to_bool(),
+            self.anonymous_login.to_bool(),
+        ];
+    }
+}
+
+pub enum AnonStatus {
+    Enabled,
+    Disabled,
+}
+
+impl AnonStatus {
+    pub fn to_bool(&self) -> bool {
+        match self {
+            AnonStatus::Enabled => true,
+            AnonStatus::Disabled => false,
+        }
+    }
+    pub fn from_bool(flag: bool) -> AnonStatus {
+        match flag {
+            true => AnonStatus::Enabled,
+            false => AnonStatus::Disabled,
         }
     }
 }

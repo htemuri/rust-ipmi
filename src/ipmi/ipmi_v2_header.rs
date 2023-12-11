@@ -11,8 +11,8 @@ pub struct IpmiV2Header {
     pub payload_enc: bool,
     pub payload_auth: bool,
     pub payload_type: PayloadType,
-    pub oem_iana: u32,
-    pub oem_payload_id: u16,
+    pub oem_iana: Option<u32>,
+    pub oem_payload_id: Option<u16>,
     pub rmcp_plus_session_id: u32,
     pub session_seq_number: u32,
     pub payload_length: u16,
@@ -37,8 +37,8 @@ impl IpmiV2Header {
             payload_enc,
             payload_auth,
             payload_type,
-            oem_iana: 0x00,
-            oem_payload_id: 0x00,
+            oem_iana: None,
+            oem_payload_id: None,
             rmcp_plus_session_id,
             session_seq_number,
             payload_length,
@@ -53,19 +53,21 @@ impl IpmiV2Header {
     pub fn to_bytes(&self) -> ArrayVec<u8, { IpmiHeader::MAX_LEN }> {
         match self.payload_type {
             PayloadType::OEM => {
-                let oem_iana_be = self.oem_iana.to_be_bytes();
-                let oem_payload_id_be = self.oem_payload_id.to_be_bytes();
-                let rmcp_ses_be = self.rmcp_plus_session_id.to_be_bytes();
-                let ses_seq_be = self.session_seq_number.to_be_bytes();
-                let len_be = self.payload_length.to_be_bytes();
+                let oem_iana_be = self.oem_iana.unwrap().to_le_bytes();
+                let oem_payload_id_be = self.oem_payload_id.unwrap().to_le_bytes();
+                let rmcp_ses_be = self.rmcp_plus_session_id.to_le_bytes();
+                let ses_seq_be = self.session_seq_number.to_le_bytes();
+                let len_be = self.payload_length.to_le_bytes();
 
                 let mut result = ArrayVec::new();
                 result.extend([
                     self.auth_type.to_u8(),
                     {
                         let mut bv: BitVec<u8, Msb0> = bitvec![u8, Msb0; 0;8];
-                        bv[0..0].store::<u8>(self.payload_enc as u8);
-                        bv[1..1].store::<u8>(self.payload_auth as u8);
+                        bv.set(0, self.payload_enc);
+                        bv.set(1, self.payload_auth);
+                        // bv[0..0].store::<u8>(self.payload_enc as u8);
+                        // bv[1..1].store::<u8>(self.payload_auth as u8);
                         bv[2..].store::<u8>(self.payload_type.to_u8());
                         let payload_type = bv[..].load::<u8>();
                         payload_type
@@ -93,17 +95,19 @@ impl IpmiV2Header {
                 result
             }
             _ => {
-                let rmcp_ses_be = self.rmcp_plus_session_id.to_be_bytes();
-                let ses_seq_be = self.session_seq_number.to_be_bytes();
-                let len_be = self.payload_length.to_be_bytes();
+                let rmcp_ses_be = self.rmcp_plus_session_id.to_le_bytes();
+                let ses_seq_be = self.session_seq_number.to_le_bytes();
+                let len_be = self.payload_length.to_le_bytes();
 
                 let mut result = ArrayVec::new();
                 result.extend([
                     self.auth_type.to_u8(),
                     {
                         let mut bv: BitVec<u8, Msb0> = bitvec![u8, Msb0; 0;8];
-                        bv[0..0].store::<u8>(self.payload_enc as u8);
-                        bv[1..1].store::<u8>(self.payload_auth as u8);
+                        bv.set(0, self.payload_enc);
+                        bv.set(1, self.payload_auth);
+                        // bv[0..0].store::<u8>(self.payload_enc as u8);
+                        // bv[1..1].store::<u8>(self.payload_auth as u8);
                         bv[2..].store::<u8>(self.payload_type.to_u8());
                         let payload_type = bv[..].load::<u8>();
                         payload_type
