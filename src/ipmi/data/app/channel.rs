@@ -15,7 +15,7 @@ use crate::{
             ipmi_payload_request::IpmiPayloadRequest,
         },
     },
-    packet::packet::Packet,
+    packet::packet::{Packet, Payload},
 };
 
 #[derive(Debug, Eq, PartialEq, Hash)]
@@ -77,16 +77,17 @@ impl GetChannelAuthCapabilitiesRequest {
                 auth_code,
                 payload_length: (data_bytes.len() as u8) + 7,
             }),
-            IpmiPayload::Request(IpmiPayloadRequest::new(
+            Payload::Ipmi(IpmiPayload::Request(IpmiPayloadRequest::new(
                 NetFn::App,
                 Command::GetChannelAuthCapabilities,
                 data_bytes,
-            )),
+            ))),
         );
         packet
     }
 }
 
+#[derive(Debug, Eq, PartialEq, Hash)]
 pub struct GetChannelAuthCapabilitiesResponse {
     pub channel_number: u8,
     pub auth_version: AuthVersion,
@@ -160,6 +161,7 @@ impl GetChannelAuthCapabilitiesResponse {
         }
     }
 }
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 
 pub enum KG {
     /*
@@ -185,6 +187,7 @@ impl KG {
         }
     }
 }
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 
 pub struct AnonLogin {
     /*
@@ -220,6 +223,7 @@ impl AnonLogin {
         ];
     }
 }
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 
 pub enum AnonStatus {
     Enabled,
@@ -240,6 +244,7 @@ impl AnonStatus {
         }
     }
 }
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 
 pub enum AuthVersion {
     IpmiV2,
@@ -262,7 +267,7 @@ impl AuthVersion {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum Privilege {
     Reserved,
     Callback,

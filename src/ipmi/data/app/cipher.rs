@@ -1,9 +1,10 @@
 use crate::ipmi::data::commands::Command;
+use crate::packet::packet::Payload;
 use crate::{
     connection::Connection,
     helpers::utils::join_two_bits_to_byte,
     ipmi::{
-        ipmi_header::{AuthType, IpmiHeader},
+        ipmi_header::IpmiHeader,
         ipmi_v2_header::{IpmiV2Header, PayloadType},
         payload::{
             ipmi_payload::{IpmiPayload, NetFn},
@@ -12,7 +13,7 @@ use crate::{
     },
     packet::packet::Packet,
 };
-use bitvec::{prelude::*, vec};
+use bitvec::prelude::*;
 
 pub struct GetChannelCipherSuitesRequest {
     pub channel_number: u8,
@@ -50,13 +51,7 @@ impl GetChannelCipherSuitesRequest {
         result
     }
 
-    pub fn create_packet(
-        &self,
-        con: &Connection,
-        session_seq_number: u32,
-        session_id: u32,
-        auth_code: Option<u128>,
-    ) -> Packet {
+    pub fn create_packet(&self, con: &Connection) -> Packet {
         let data_bytes = self.to_bytes();
         // println!("{:x?}", data_bytes);
         let packet = Packet::new(
@@ -71,11 +66,11 @@ impl GetChannelCipherSuitesRequest {
                 session_seq_number: 0x0,
                 payload_length: ((data_bytes.len() as u8) + 7).try_into().unwrap(),
             }),
-            IpmiPayload::Request(IpmiPayloadRequest::new(
+            Payload::Ipmi(IpmiPayload::Request(IpmiPayloadRequest::new(
                 NetFn::App,
                 Command::GetChannelCipherSuites,
                 data_bytes,
-            )),
+            ))),
         );
         packet
     }
@@ -91,6 +86,7 @@ impl Default for GetChannelCipherSuitesRequest {
         }
     }
 }
+
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct GetChannelCipherSuitesResponse {
     /*
@@ -124,13 +120,11 @@ impl GetChannelCipherSuitesResponse {
 
     pub fn is_last(&self) -> bool {
         if self.cypher_suite_record_data_bytes.len() < 16 {
-            println!(
-                "cipher len: {:?}",
-                self.cypher_suite_record_data_bytes.len()
-            );
             return true;
         } else {
             return false;
         }
     }
 }
+
+//

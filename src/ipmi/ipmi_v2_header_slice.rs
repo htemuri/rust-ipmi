@@ -11,7 +11,7 @@ pub struct IpmiV2HeaderSlice<'a> {
 
 impl<'a> IpmiV2HeaderSlice<'a> {
     pub fn from_slice(slice: &'a [u8]) -> Result<IpmiV2HeaderSlice<'a>, std::io::ErrorKind> {
-        println!("slice ipmi v2 header: {:x?}", slice);
+        // println!("slice ipmi v2 header: {:x?}", slice);
         // todo: implement error checking
         Ok(IpmiV2HeaderSlice::<'a> {
             slice: unsafe { core::slice::from_raw_parts(slice.as_ptr(), slice.len()) },

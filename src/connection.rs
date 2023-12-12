@@ -6,6 +6,7 @@ use crate::{
             app::{
                 channel::{
                     self, GetChannelAuthCapabilitiesRequest, GetChannelAuthCapabilitiesResponse,
+                    Privilege,
                 },
                 cipher::{GetChannelCipherSuitesRequest, GetChannelCipherSuitesResponse},
             },
@@ -17,8 +18,15 @@ use crate::{
             ipmi_payload::IpmiPayload,
             ipmi_payload_response::{CompletionCode, IpmiPayloadResponse},
         },
+        rmcp_payloads::{
+            rakp::RAKPMessage,
+            rmcp_open_session::{
+                AuthAlgorithm, ConfidentialityAlgorithm, IntegrityAlgorithm, RMCPPlusOpenSession,
+                RMCPPlusOpenSessionRequest, StatusCode,
+            },
+        },
     },
-    packet::packet::Packet,
+    packet::packet::{Packet, Payload},
 };
 
 pub struct Connection {
@@ -74,12 +82,10 @@ impl Connection {
     }
 
     pub fn establish_connection(&mut self) {
-        // match self.auth_type {
-        //     AuthType::None => {
         let discovery_req =
             GetChannelAuthCapabilitiesRequest::new(true, channel::Privilege::Administrator)
                 .create_packet(self, 0x00, 0x00, None);
-        // println!("{:?}", discovery_req);
+
         self.client_socket
             .send(&discovery_req.to_bytes())
             .expect("couldn't send message");
@@ -87,33 +93,16 @@ impl Connection {
         let mut recv_buff = [0; 8092];
 
         while let Ok((n, _addr)) = self.client_socket.recv_from(&mut recv_buff) {
-            println!("response slice: {:x?}", &recv_buff[..n]);
+            // println!("response slice: {:x?}", &recv_buff[..n]);
             let response = Packet::from_slice(&recv_buff[..n]);
-            if let Some(IpmiPayload::Response(payload)) = response.ipmi_payload {
+            if let Some(Payload::Ipmi(IpmiPayload::Response(payload))) = response.payload {
                 // println!("RESPONSE: {:?}", payload);
                 self.handle_completion_code(payload)
             } else {
-                println!("Not a Response packet!")
+                println!("Not an IPMI Response!");
+                self.handle_status_code(response.payload);
             }
         }
-
-        // if let Ok((n, _addr)) = self.client_socket.recv_from(&mut recv_buff) {
-        //     let response = Packet::from_slice(&recv_buff, n);
-        //     if let Some(IpmiPayload::Response(payload)) = response.ipmi_payload {
-        //         println!("RESPONSE: {:?}", payload);
-        //         self.handle_completion_code(payload)
-        //     }
-        //     self
-        // } else {
-        //     println!("identified as not a response?");
-        //     self
-        //     // todo!()
-        // }
-        // }
-        // _ => {
-        //     todo!()
-        // }
-        // }
     }
 
     fn handle_completion_code(&mut self, response_payload: IpmiPayloadResponse) {
@@ -122,15 +111,12 @@ impl Connection {
                 Command::GetChannelAuthCapabilities => {
                     let response =
                         GetChannelAuthCapabilitiesResponse::from_slice(&response_payload.data);
-                    println!(
-                        "printing auth type from channel response: {:x?}",
-                        response.auth_type
-                    );
+                    println!("{:x?}", response);
                     self.auth_type = AuthType::RmcpPlus;
-                    let cipher_packet = GetChannelCipherSuitesRequest::default()
-                        .create_packet(self, 0x0, 0x0, None);
+                    let cipher_packet =
+                        GetChannelCipherSuitesRequest::default().create_packet(self);
                     // println!("created packet");
-                    println!("FIRST CIPHER PACKET: {:x?}", cipher_packet);
+                    // println!("FIRST CIPHER PACKET: {:x?}", cipher_packet);
                     self.client_socket
                         .send(&cipher_packet.to_bytes())
                         .expect("couldn't send message");
@@ -149,14 +135,28 @@ impl Connection {
                                 true,
                                 self.cipher_list_index,
                             )
-                            .create_packet(self, 0x0, 0x0, None);
+                            .create_packet(self);
                             // println!("reponse to cipher response: {:x?}", cipher_packet);
                             self.client_socket
                                 .send(&cipher_packet.to_bytes())
                                 .expect("couldn't send message");
                         }
                         true => {
-                            println!("end of cipher suites")
+                            // parse through cipher suite records
+
+                            // begin rmcp open session
+                            let rmcp_open_packet = RMCPPlusOpenSessionRequest::new(
+                                0,
+                                Privilege::Reserved,
+                                0xa0a2a3a4,
+                                AuthAlgorithm::RakpHmacSha256,
+                                IntegrityAlgorithm::HmacSha256128,
+                                ConfidentialityAlgorithm::AesCbc128,
+                            )
+                            .create_packet(&self);
+                            self.client_socket
+                                .send(&rmcp_open_packet.to_bytes())
+                                .expect("couldn't send message");
                         }
                     }
                 }
@@ -170,6 +170,26 @@ impl Connection {
         }
     }
 
+    fn handle_status_code(&mut self, response_payload: Option<Payload>) {
+        if let Some(Payload::RMCP(RMCPPlusOpenSession::Response(payload))) = response_payload {
+            match payload.rmcp_plus_status_code {
+                StatusCode::NoErrors => {
+                    // send rakp message 1
+                    println!("{:x?}", payload)
+                }
+                _ => todo!(),
+            }
+        }
+        // if let Payload::RAKP(RAKPMessage::Message2(payload)) = response_payload {
+        //     match payload.rmcp_plus_status_code {
+        //         StatusCode::NoErrors => {
+        //             // send rakp message 1
+        //             println!("{:x?}", payload)
+        //         }
+        //         _ => todo!(),
+        //     }
+        // }
+    }
     // pub fn send(&self, slice: &[u8]) {
     //     let packet = Packet::from_slice(slice, slice.len());
 

@@ -1,6 +1,15 @@
 use crate::{
     ipmi::{
-        ipmi_header::IpmiHeader, ipmi_v1_header::IpmiV1Header, payload::ipmi_payload::IpmiPayload,
+        ipmi_header::IpmiHeader,
+        ipmi_v1_header::IpmiV1Header,
+        ipmi_v2_header::PayloadType,
+        payload::{self, ipmi_payload::IpmiPayload},
+        rmcp_payloads::{
+            rakp::RAKPMessage,
+            rmcp_open_session::{
+                RMCPPlusOpenSession, RMCPPlusOpenSessionRequest, RMCPPlusOpenSessionResponse,
+            },
+        },
     },
     rmcp::rcmp_header::RmcpHeader,
 };
@@ -9,15 +18,15 @@ use crate::{
 pub struct Packet {
     pub rmcp_header: RmcpHeader,
     pub ipmi_header: IpmiHeader,
-    pub ipmi_payload: Option<IpmiPayload>,
+    pub payload: Option<Payload>,
 }
 
 impl Packet {
-    pub fn new(ipmi_header: IpmiHeader, ipmi_payload: IpmiPayload) -> Packet {
+    pub fn new(ipmi_header: IpmiHeader, payload: Payload) -> Packet {
         Packet {
             rmcp_header: RmcpHeader::default(),
             ipmi_header,
-            ipmi_payload: Some(ipmi_payload),
+            payload: Some(payload),
         }
     }
 
@@ -26,16 +35,28 @@ impl Packet {
         let ipmi_header_len = IpmiHeader::header_len(slice[4], slice[5]);
         let ipmi_header = IpmiHeader::from_slice(&slice[4..(ipmi_header_len + 4)]);
         let payload_length = ipmi_header.payload_len();
-        println!("payload length: {:x?}", payload_length);
+        // println!("payload length: {:x?}", payload_length);
+
         Packet {
             rmcp_header: RmcpHeader::from_slice(&slice[..3]),
             ipmi_header: IpmiHeader::from_slice(&slice[4..(ipmi_header_len + 4)]),
-            ipmi_payload: {
+            payload: {
                 match payload_length {
                     0 => None,
-                    _ => Some(IpmiPayload::from_slice(
-                        &slice[(nbytes - payload_length)..nbytes],
-                    )),
+                    _ => match ipmi_header.payload_type() {
+                        PayloadType::IPMI => Some(Payload::Ipmi(IpmiPayload::from_slice(
+                            &slice[(nbytes - payload_length)..nbytes],
+                        ))),
+                        PayloadType::RcmpOpenSessionRequest => {
+                            Some(Payload::RMCP(RMCPPlusOpenSession::Request(todo!())))
+                        }
+                        PayloadType::RcmpOpenSessionResponse => Some(Payload::RMCP(
+                            RMCPPlusOpenSession::Response(RMCPPlusOpenSessionResponse::from_slice(
+                                &slice[(nbytes - payload_length)..nbytes],
+                            )),
+                        )),
+                        _ => todo!(),
+                    },
                 }
             },
         }
@@ -49,7 +70,7 @@ impl Packet {
         for &byte in self.ipmi_header.to_bytes().iter() {
             result.push(byte);
         }
-        match &self.ipmi_payload {
+        match &self.payload {
             None => {}
             Some(a) => {
                 for &byte in a.to_bytes().iter() {
@@ -66,7 +87,23 @@ impl Default for Packet {
         Self {
             rmcp_header: RmcpHeader::default(),
             ipmi_header: IpmiHeader::V1_5(IpmiV1Header::default()),
-            ipmi_payload: None,
+            payload: None,
+        }
+    }
+}
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+pub enum Payload {
+    Ipmi(IpmiPayload),
+    RMCP(RMCPPlusOpenSession),
+    RAKP(RAKPMessage),
+}
+
+impl Payload {
+    pub fn to_bytes(&self) -> Vec<u8> {
+        match self {
+            Payload::Ipmi(payload) => payload.to_bytes(),
+            Payload::RMCP(payload) => payload.to_bytes(),
+            _ => todo!(),
         }
     }
 }

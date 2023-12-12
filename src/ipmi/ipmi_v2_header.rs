@@ -132,7 +132,7 @@ impl IpmiV2Header {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum PayloadType {
     IPMI,
     SOL,

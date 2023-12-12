@@ -27,6 +27,13 @@ impl IpmiHeader {
         }
     }
 
+    pub fn payload_type(&self) -> PayloadType {
+        match self {
+            IpmiHeader::V1_5(_header) => PayloadType::IPMI,
+            IpmiHeader::V2_0(header) => header.payload_type,
+        }
+    }
+
     pub fn header_len(first_byte: u8, second_byte: u8) -> usize {
         let auth_type = AuthType::from_u8(first_byte);
         match auth_type {
