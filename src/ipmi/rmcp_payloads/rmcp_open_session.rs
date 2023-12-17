@@ -1,5 +1,3 @@
-use serde::de::value;
-
 use crate::{
     connection::Connection,
     ipmi::{

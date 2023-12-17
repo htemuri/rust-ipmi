@@ -4,7 +4,6 @@ use crate::{
         data::app::channel::Privilege,
         ipmi_header::IpmiHeader,
         ipmi_v2_header::{IpmiV2Header, PayloadType},
-        payload,
     },
     packet::packet::{Packet, Payload},
 };
@@ -143,35 +142,6 @@ impl RAKPMessage2 {
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct RAKPMessage3 {
-    /*
-    1 Message Tag - Selected by remote console. Used by remote console to help match
-        responses up with requests. In this case, the corresponding RAKP Message 4 that is
-        returned by the BMC. The BMC can use this value to help differentiate retried
-        messages from new messages from the remote console.
-    2 RMCP+ Status Code Identifies the status of the previous message. If the previous
-        message generated an error, then only the Completion Code, Reserved, and
-        Managed System Session ID fields are returned.
-        If the BMC receives an error from the remote console, it will immediately terminate the
-        RAKP exchange in progress, and will not respond with an RAKP Message 4, even if
-        the remaining parameters and Key Exchange Authentication code (below) are valid.
-        (Terminating the RAKP exchange in progress means that the BMC will require the
-        remote console to restart the RAKP authentication process starting with RAKP
-        Message 1.)
-        See Table 13-15, RMCP+ and RAKP Message Status Codes for the status codes
-        defined for this message.
-    3:4 Reserved - write as 00_00h.
-    5:8 Managed System Session ID
-        The Managed System’s Session ID for this session, returned by the managed system
-        on the previous RMCP+ Open Session Response message.
-    9:N Key Exchange Authentication Code
-        An integrity check value over the relevant items specified by the RAKP authentication
-        algorithm identified in RAKP Message 1 . The size of this field depends on the
-        specific Authentication Algorithm. This field may be 0 bytes (absent) for some
-        algorithms (e.g. RAKP-none). Note that if the authentication algorithm for the given
-        Requested Maximum Privilege Level/Role specifies (e.g. RAKP-none) specifies ‘no
-        Authentication Code’ then this field must be absent to be considered a match for the
-        algorithm.
-     */
     pub message_tag: u8,
     pub rmcp_plus_status_code: StatusCode,
     pub managed_system_session_id: u32,
@@ -229,26 +199,6 @@ impl RAKPMessage3 {
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct RAKPMessage4 {
-    /*
-    1 Message Tag - The BMC returns the Message Tag value that was passed by the
-        remote console in RAKP Message 3.
-    2 RMCP+ Status Code - Identifies the status of the previous message. If the
-        previous message generated an error, then only the Status Code,
-        Reserved, and Management Console Session ID fields are returned. See
-        2.1.3.6.1 for the status codes defined for this message.
-    3:4 Reserved - Reserved for future definition by this specification set to
-        000000h.
-    5:8 Mgmt Console Session ID The Mgmt Console Session ID specified by the
-        RMCP+ Open Session Request (83h) message associated with this
-        response.
-    9:N Integrity Check Value An integrity check value over the relevant items
-        specified by the RAKP authentication algorithm that was identified in RAKP
-        Message 1. The size of this field depends on the specific authentication
-        algorithm. (For example, the RAKP-HMAC-SHA1 specifies that an HMACSHA1-96 algorithm be used for calculating this field. See Section 13.28,
-        Authentication, Integrity, and Confidentiality Algorithm Numbers for info on
-        the algorithm to be used for this field.) This field may be 0 bytes (absent) for
-        some authentication algorithms (e.g. RAKP-none)
-     */
     pub message_tag: u8,
     pub rmcp_plus_status_code: StatusCode,
     pub management_console_session_id: u32,
