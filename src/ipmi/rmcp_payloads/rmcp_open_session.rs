@@ -294,6 +294,31 @@ impl StatusCode {
             0x13..=0xFF => StatusCode::Reserved(value),
         }
     }
+
+    pub fn to_u8(&self) -> u8 {
+        match self {
+            StatusCode::NoErrors => 0x0,
+            StatusCode::InsufficientResources => 0x01,
+            StatusCode::InvalidSessionId => 0x02,
+            StatusCode::InvalidPayloadType => 0x03,
+            StatusCode::InvalidAuthAlgorithm => 0x04,
+            StatusCode::InvalidIntegrityAlgorithm => 0x05,
+            StatusCode::NoMatchingAuthPayload => 0x06,
+            StatusCode::NoMatchingIntegrityPayload => 0x07,
+            StatusCode::InactiveSessionId => 0x08,
+            StatusCode::InvalidRole => 0x09,
+            StatusCode::UnauthorizedRoleRequested => 0xA,
+            StatusCode::InsufficientResourcesForRole => 0xB,
+            StatusCode::InvalidNameLength => 0xC,
+            StatusCode::UnauthorizedName => 0xD,
+            StatusCode::UnauthorizedGUID => 0xE,
+            StatusCode::InvalidIntegrityCheckValue => 0xF,
+            StatusCode::InvalidConfidentialityAlgorithm => 0x10,
+            StatusCode::NoCipherSuiteMatch => 0x11,
+            StatusCode::IllegalParameter => 0x12,
+            StatusCode::Reserved(value) => *value,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]

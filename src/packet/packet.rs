@@ -5,7 +5,7 @@ use crate::{
         ipmi_v2_header::PayloadType,
         payload::{self, ipmi_payload::IpmiPayload},
         rmcp_payloads::{
-            rakp::RAKPMessage,
+            rakp::{self, RAKPMessage2, RAKPMessage4, RAKP},
             rmcp_open_session::{
                 RMCPPlusOpenSession, RMCPPlusOpenSessionRequest, RMCPPlusOpenSessionResponse,
             },
@@ -47,14 +47,18 @@ impl Packet {
                         PayloadType::IPMI => Some(Payload::Ipmi(IpmiPayload::from_slice(
                             &slice[(nbytes - payload_length)..nbytes],
                         ))),
-                        PayloadType::RcmpOpenSessionRequest => {
-                            Some(Payload::RMCP(RMCPPlusOpenSession::Request(todo!())))
-                        }
+                        PayloadType::RcmpOpenSessionRequest => todo!(),
                         PayloadType::RcmpOpenSessionResponse => Some(Payload::RMCP(
                             RMCPPlusOpenSession::Response(RMCPPlusOpenSessionResponse::from_slice(
                                 &slice[(nbytes - payload_length)..nbytes],
                             )),
                         )),
+                        PayloadType::RAKP2 => Some(Payload::RAKP(RAKP::Message2(
+                            RAKPMessage2::from_slice(&slice[(nbytes - payload_length)..nbytes]),
+                        ))),
+                        PayloadType::RAKP4 => Some(Payload::RAKP(RAKP::Message4(
+                            RAKPMessage4::from_slice(&slice[(nbytes - payload_length)..nbytes]),
+                        ))),
                         _ => todo!(),
                     },
                 }
@@ -95,7 +99,7 @@ impl Default for Packet {
 pub enum Payload {
     Ipmi(IpmiPayload),
     RMCP(RMCPPlusOpenSession),
-    RAKP(RAKPMessage),
+    RAKP(RAKP),
 }
 
 impl Payload {
@@ -103,6 +107,7 @@ impl Payload {
         match self {
             Payload::Ipmi(payload) => payload.to_bytes(),
             Payload::RMCP(payload) => payload.to_bytes(),
+            Payload::RAKP(payload) => payload.to_bytes(),
             _ => todo!(),
         }
     }
