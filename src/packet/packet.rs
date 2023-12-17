@@ -3,12 +3,10 @@ use crate::{
         ipmi_header::IpmiHeader,
         ipmi_v1_header::IpmiV1Header,
         ipmi_v2_header::PayloadType,
-        payload::{self, ipmi_payload::IpmiPayload},
+        payload::ipmi_payload::IpmiPayload,
         rmcp_payloads::{
-            rakp::{self, RAKPMessage2, RAKPMessage4, RAKP},
-            rmcp_open_session::{
-                RMCPPlusOpenSession, RMCPPlusOpenSessionRequest, RMCPPlusOpenSessionResponse,
-            },
+            rakp::{RAKPMessage2, RAKPMessage4, RAKP},
+            rmcp_open_session::{RMCPPlusOpenSession, RMCPPlusOpenSessionResponse},
         },
     },
     rmcp::rcmp_header::RmcpHeader,
@@ -108,7 +106,6 @@ impl Payload {
             Payload::Ipmi(payload) => payload.to_bytes(),
             Payload::RMCP(payload) => payload.to_bytes(),
             Payload::RAKP(payload) => payload.to_bytes(),
-            _ => todo!(),
         }
     }
 }
