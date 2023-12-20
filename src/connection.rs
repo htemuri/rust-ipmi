@@ -1,3 +1,10 @@
+use aes::{
+    cipher::{
+        block_padding::Pkcs7, generic_array::GenericArray, BlockDecryptMut, BlockEncryptMut,
+        KeyIvInit,
+    },
+    Block,
+};
 use hmac::{Hmac, Mac};
 use sha2::Sha256;
 use std::net::{Ipv4Addr, UdpSocket};
@@ -14,7 +21,8 @@ use crate::{
             },
             commands::Command,
         },
-        ipmi_header::AuthType,
+        ipmi_header::{AuthType, IpmiHeader},
+        ipmi_v2_header::{IpmiV2Header, PayloadType},
         payload::{
             ipmi_payload::IpmiPayload,
             ipmi_payload_response::{CompletionCode, IpmiPayloadResponse},
@@ -31,22 +39,23 @@ use crate::{
 };
 
 pub struct Connection {
-    pub state: State,
+    state: State,
     cipher_list_index: u8,
     pub client_socket: UdpSocket,
     pub ipmi_server_ip_addr: Ipv4Addr,
     pub auth_type: AuthType,
     pub username: Option<String>,
-    pub password: Option<String>,
-    pub managed_system_session_id: u32,
-    pub max_privilege: Privilege,
+    password: Option<String>,
+    managed_system_session_id: u32,
+    max_privilege: Privilege,
     remote_console_random_number: u128,
+    k2: [u8; 32],
 }
-
+#[derive(PartialEq)]
 pub enum State {
     Discovery,
-    // Activation,
-    // Active
+    Authentication,
+    Established,
 }
 
 impl Connection {
@@ -55,7 +64,7 @@ impl Connection {
         Connection {
             state: State::Discovery,
             client_socket: {
-                let socket = UdpSocket::bind("0.0.0.0:5000").expect("Can't bind to the port");
+                let socket = UdpSocket::bind("0.0.0.0:0").expect("Can't bind to the port");
                 socket
                     .connect(format!("{}:{}", ipmi_server_ip_addr, 623))
                     .expect(format!("Can't connect to {}:{}", ipmi_server_ip_addr, &623).as_str());
@@ -69,6 +78,7 @@ impl Connection {
             managed_system_session_id: 0,
             max_privilege: Privilege::Administrator,
             remote_console_random_number: 0,
+            k2: [0; 32],
         }
     }
 
@@ -80,7 +90,7 @@ impl Connection {
         Connection {
             state: State::Discovery,
             cipher_list_index: 0,
-            client_socket: { UdpSocket::bind("0.0.0.0:5000").expect("Can't bind to the port") },
+            client_socket: { UdpSocket::bind("0.0.0.0:0").expect("Can't bind to the port") },
             ipmi_server_ip_addr,
             username: Some(username),
             password: Some(password),
@@ -88,10 +98,13 @@ impl Connection {
             managed_system_session_id: 0,
             max_privilege: Privilege::Administrator,
             remote_console_random_number: 0,
+            k2: [0; 32],
         }
     }
 
-    pub fn establish_connection(&mut self) {
+    pub fn establish_connection(&mut self, username: String, password: String) {
+        self.username = Some(username);
+        self.password = Some(password);
         let discovery_req =
             GetChannelAuthCapabilitiesRequest::new(true, channel::Privilege::Administrator)
                 .create_packet(self, 0x00, 0x00, None);
@@ -111,6 +124,9 @@ impl Connection {
             } else {
                 println!("Not an IPMI Response!");
                 self.handle_status_code(response.payload);
+                if self.state == State::Established {
+                    return;
+                }
             }
         }
     }
@@ -187,9 +203,10 @@ impl Connection {
             match payload.rmcp_plus_status_code {
                 StatusCode::NoErrors => {
                     println!("{:x?}", payload);
+                    self.state = State::Authentication;
                     self.max_privilege = payload.max_privilege;
                     self.managed_system_session_id = payload.managed_system_session_id;
-                    self.username = Some(String::from("root"));
+                    // self.username = Some(String::from("root"));
                     // send rakp message 1
                     let rakp1_packet = RAKPMessage1::new(
                         0x0,
@@ -230,7 +247,8 @@ impl Connection {
             match payload.rmcp_plus_status_code {
                 StatusCode::NoErrors => {
                     println!("{:x?}", payload);
-                    println!("RAKP COMPLETED!!!")
+                    println!("RAKP COMPLETED!!!");
+                    self.state = State::Established;
                 }
                 _ => {
                     println!("{:?}", payload.rmcp_plus_status_code);
@@ -239,7 +257,7 @@ impl Connection {
         }
     }
 
-    fn generate_rakp3_message(&self, rakp2_payload: RAKPMessage2) -> Packet {
+    fn generate_rakp3_message(&mut self, rakp2_payload: RAKPMessage2) -> Packet {
         let mut rakp2_input_buffer = Vec::new();
         rakp2_payload
             .remote_console_session_id
@@ -331,6 +349,11 @@ impl Connection {
         //     0x4c, 0x4c, 0x48, 0x00, 0x10, 0x53, 0x80, 0x34, 0xb6, 0xc0, 0x4f, 0x43, 0x48, 0x32,
         //     0x14, 0x04, 0x72, 0x6f, 0x6f, 0x74,
         // ]
+        // let test_input_sik = [
+        //     0x3e, 0x41, 0x16, 0x0f, 0xc1, 0x78, 0x89, 0x27, 0xdf, 0x00, 0xd4, 0x56, 0xa3, 0xfb,
+        //     0xca, 0x7e, 0x48, 0xbb, 0x15, 0x62, 0xf6, 0xee, 0x8f, 0xce, 0xe4, 0xdc, 0x6d, 0xec,
+        //     0xf6, 0xf6, 0x0d, 0x5d, 0x14, 0x04, 0x72, 0x6f, 0x6f, 0x74,
+        // ];
         // .as_slice();
         //     a4 a3 a2 a0 00 6c 00 02 42 2d 45 e6 1f be 13 f1
         //  65 21 9d 77 45 ce 32 56 12 4d 7a 51 a5 18 df 63
@@ -349,6 +372,8 @@ impl Connection {
         // println!("mac key: {:x?}", rakp2_mac_key.as_slice());
         let mut mac = HmacSha256::new_from_slice(rakp2_mac_key.as_slice())
             .expect("HMAC can take key of any size");
+        let mut sikmac = HmacSha256::new_from_slice(rakp2_mac_key.as_slice())
+            .expect("HMAC can take key of any size");
         // mac.update(rakp3_input_buffer.as_slice());
         mac.update(rakp3_input_buffer.as_slice());
         // mac.rakp3_input_buffer
@@ -358,7 +383,34 @@ impl Connection {
         let result = mac.finalize();
         // for i in result.
         let auth_bytes = result.into_bytes();
-        // println!("auth bytes {:x?}", auth_bytes);
+        // let mut mac_sik = HmacSha256::new_from_slice()
+        sikmac.update(session_integrity_key_input.as_slice());
+        let sik = sikmac.finalize().into_bytes();
+
+        println!("sik {:x?}", sik);
+        // for i in 1..64 {
+        //     let mut kmac = HmacSha256::new_from_slice(&sik).expect("HMAC can take key of any size");
+        //     let vec = vec![2; i];
+        //     kmac.update(vec.as_slice());
+        //     // println!("k2 input: {:x?}", [0x02; 32]);
+        //     let k2 = kmac.finalize().into_bytes();
+        //     if k2
+        //         == [
+        //             0xdb, 0xfd, 0x56, 0x00, 0xcf, 0x9e, 0x85, 0x3b, 0x2a, 0x3d, 0x95, 0xb1, 0xb2,
+        //             0x5e, 0xa3, 0xf3, 0x72, 0x9d, 0xec, 0x75, 0x43, 0x10, 0xd4, 0x57, 0x97, 0x5e,
+        //             0x1b, 0xb1, 0xce, 0x40, 0xf2, 0x71,
+        //         ]
+        //         .into()
+        //     {
+        //         println!("i = {}", i)
+        //     }
+        //     println!("k2 {:x?}", k2);
+        // }
+        let mut kmac = HmacSha256::new_from_slice(&sik).expect("HMAC can take key of any size");
+        kmac.update(&[2; 20]);
+        let k2 = kmac.finalize().into_bytes();
+        println!("k2 {:x?}", k2);
+        self.k2 = k2.into();
         // println!(
         //     "rakp2 auth code {:x?}",
         //     rakp2_payload.key_exchange_auth_code.as_slice()
@@ -369,6 +421,7 @@ impl Connection {
             // println!("{}", i);
             auth_vec.push(i)
         }
+        self.encrypt_packet(vec![]);
         // println!()
 
         // auth_vec.extend_from_slice(auth_bytes.try_into().unwrap());
@@ -387,6 +440,63 @@ impl Connection {
         // todo!()
     }
 
+    fn encrypt_packet(&self, payload_bytes: Vec<u8>) {
+        type Aes256CbcEnc = cbc::Encryptor<aes::Aes256>;
+        type Aes256CbcDec = cbc::Decryptor<aes::Aes256>;
+
+        // let key = [0x42; 16];
+        let iv = [0x24; 16];
+        let plaintext = [
+            0x06, 0xc0, 0x00, 0x8b, 0x00, 0x02, 0x0a, 0x00, 0x00, 0x00, 0x20, 0x00, 0xad, 0xf9,
+            0x95, 0x36, 0x64, 0x35, 0x8f, 0xcc, 0xec, 0x45, 0x9a, 0x4c, 0xbd, 0x7e, 0xee, 0x39,
+            0x7e, 0x6a, 0x27, 0x7a, 0x5a, 0xb8, 0xc2, 0x8d, 0x75, 0x67, 0x4a, 0x6c, 0x93, 0x67,
+            0xa0, 0xae, 0xff, 0xff, 0x02, 0x07,
+        ];
+        // let ciphertext = hex!(
+        //     "c7fe247ef97b21f07cbdd26cb5d346bf"
+        //     "d27867cb00d9486723e159978fb9a5f9"
+        //     "14cfb228a710de4171e396e7b6cf859e"
+        // );
+
+        // encrypt/decrypt in-place
+        // buffer must be big enough for padded plaintext
+        let mut buf = [0u8; 48];
+        // let test = GenericArray::from_slice(plaintext.as_slice());
+        // let array: &GenericArray<u8> = GenericArray::from_slice(plaintext.as_slice());
+        let pt_len = plaintext.clone().len();
+        let mut block = *Block::from_slice(plaintext.as_slice());
+
+        buf[..pt_len].copy_from_slice(&plaintext);
+        let ct = Aes256CbcEnc::new(&self.k2.into(), &iv.into()).encrypt_block_mut(&mut block);
+        // .encrypt_padded_mut::<Pkcs7>(&mut buf, pt_len)
+        // .unwrap();
+        // .encrypt_block_mut(&mut buf.into());
+        println!("ct {:x?}", ct);
+        // assert_eq!(ct, &ciphertext[..]);
+
+        let pt = Aes256CbcDec::new(&self.k2.into(), &iv.into())
+            .decrypt_padded_mut::<Pkcs7>(&mut buf)
+            .unwrap();
+        println!("plain text {:x?}", pt)
+        // assert_eq!(pt, &plaintext);
+    }
+
+    // fn decrypt_packet(&self)
+
+    // pub fn get_device_id(&self) {
+    //     let packet = Packet::new(
+    //         IpmiHeader::V2_0(IpmiV2Header::new(
+    //             self.auth_type,
+    //             true,
+    //             true,
+    //             PayloadType::IPMI,
+    //             ,
+    //             session_seq_number,
+    //             payload_length,
+    //         )),
+    //         payload,
+    //     );
+    // }
     // pub fn send(&self, slice: &[u8]) {
     //     let packet = Packet::from_slice(slice, slice.len());
 
