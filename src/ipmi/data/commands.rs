@@ -40,7 +40,7 @@ pub enum Command {
     GetChannelAuthCapabilities,
     // GetSessionChallenge,
     // ActivateSession,
-    // SetSessionPrivilegeLevel,
+    SetSessionPrivilegeLevel,
     // CloseSession,
     // GetAuthCode,
     // SetChannelAccess,
@@ -73,6 +73,7 @@ impl Command {
         match self {
             Command::GetChannelAuthCapabilities => 0x38,
             Command::GetChannelCipherSuites => 0x54,
+            Command::SetSessionPrivilegeLevel => 0x3b,
             Command::Reserved => 0x00,
         }
     }
@@ -82,6 +83,7 @@ impl Command {
             NetFn::App => match command_code {
                 0x38 => Command::GetChannelAuthCapabilities,
                 0x54 => Command::GetChannelCipherSuites,
+                0x3b => Command::SetSessionPrivilegeLevel,
                 _ => Command::Reserved,
             },
             _ => Command::Reserved,

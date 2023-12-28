@@ -102,10 +102,13 @@ impl<'a> IpmiPayloadRequestSlice<'a> {
     }
 
     // return the data slice as a vector
-    pub fn data(&self) -> Vec<u8> {
+    pub fn data(&self) -> Option<Vec<u8>> {
         let len = self.slice().len() - 1;
-        // println!("{}", self.slice().len());
-        Vec::from(&self.slice()[6..len])
+        if len == 6 {
+            None
+        } else {
+            Some(Vec::from(&self.slice()[6..len]))
+        }
     }
 
     pub fn to_header(&self) -> IpmiPayloadRequest {

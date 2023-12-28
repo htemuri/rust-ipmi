@@ -80,7 +80,7 @@ impl GetChannelAuthCapabilitiesRequest {
             Payload::Ipmi(IpmiPayload::Request(IpmiPayloadRequest::new(
                 NetFn::App,
                 Command::GetChannelAuthCapabilities,
-                data_bytes,
+                Some(data_bytes),
             ))),
         );
         packet

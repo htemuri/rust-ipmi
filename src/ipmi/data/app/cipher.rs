@@ -69,7 +69,7 @@ impl GetChannelCipherSuitesRequest {
             Payload::Ipmi(IpmiPayload::Request(IpmiPayloadRequest::new(
                 NetFn::App,
                 Command::GetChannelCipherSuites,
-                data_bytes,
+                Some(data_bytes),
             ))),
         );
         packet

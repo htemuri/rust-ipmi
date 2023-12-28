@@ -21,7 +21,7 @@ pub struct IpmiPayloadRequest {
     pub rq_sequence: u8,
     pub rq_lun: Lun,
     pub command: Command,
-    pub data: Vec<u8>,
+    pub data: Option<Vec<u8>>,
     // checksum 2
 }
 
@@ -39,7 +39,7 @@ impl Default for IpmiPayloadRequest {
             rq_sequence: 0x00,
             rq_lun: Lun::Bmc,
             command: Command::GetChannelAuthCapabilities,
-            data: vec![],
+            data: None,
         }
     }
 }
@@ -47,7 +47,7 @@ impl Default for IpmiPayloadRequest {
 impl IpmiPayloadRequest {
     pub const MAX_PAYLOAD_LENGTH: usize = 0xff;
 
-    pub fn new(net_fn: NetFn, command: Command, data: Vec<u8>) -> IpmiPayloadRequest {
+    pub fn new(net_fn: NetFn, command: Command, data: Option<Vec<u8>>) -> IpmiPayloadRequest {
         IpmiPayloadRequest {
             rs_addr_type: AddrType::SlaveAddress,
             rs_slave_address_type: Some(SlaveAddress::Bmc),
@@ -57,7 +57,7 @@ impl IpmiPayloadRequest {
             rq_addr_type: AddrType::SoftwareId,
             rq_slave_address_type: None,
             rq_software_type: Some(SoftwareType::RemoteConsoleSoftware(1)),
-            rq_sequence: 0x00,
+            rq_sequence: 0x8,
             rq_lun: Lun::Bmc,
             command,
             data,
@@ -77,7 +77,10 @@ impl IpmiPayloadRequest {
     }
 
     pub fn payload_length(&self) -> usize {
-        self.data.len() + 7
+        match &self.data {
+            Some(x) => 7 + x.len(),
+            None => 7,
+        }
     }
 
     // returns the payload as an object and the length of the payload
@@ -124,16 +127,19 @@ impl IpmiPayloadRequest {
         );
         let rq_seq_rq_lun = Self::join_two_bits_to_byte(self.rq_sequence, self.rs_lun.to_u8(), 6);
         let command_code = self.command.to_u8();
-        let data = self.data.as_slice();
+        // let data = self.data.as_slice();
         result.push(rs_addr);
         result.push(net_fn_rs_lun);
         result.push(checksum1);
         result.push(rq_addr);
         result.push(rq_seq_rq_lun);
         result.push(command_code);
-        for &byte in data.iter() {
-            result.push(byte);
+        if let Some(data) = &self.data {
+            for &byte in data.iter() {
+                result.push(byte);
+            }
         }
+        // println!("bytes: {:x?}", &result);
         result.push(Self::get8bit_checksum(&result[3..]));
         result
     }

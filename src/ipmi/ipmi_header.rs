@@ -6,7 +6,7 @@ use super::{
     ipmi_v2_header::{IpmiV2Header, PayloadType},
 };
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum IpmiHeader {
     V1_5(IpmiV1Header),
     V2_0(IpmiV2Header),

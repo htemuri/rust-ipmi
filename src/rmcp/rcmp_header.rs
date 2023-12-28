@@ -2,7 +2,7 @@ use bitvec::prelude::*;
 
 use super::rmcp_header_slice::RmcpHeaderSlice;
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub struct RmcpHeader {
     pub version: u8,         // 0x06 for RMCP Version 1.0
     pub reserved: u8,        // 0x00
@@ -55,7 +55,7 @@ impl Default for RmcpHeader {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum MessageClass {
     ASF,
     IPMI,

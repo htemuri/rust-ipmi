@@ -5,7 +5,7 @@ use super::{
     ipmi_v1_header_slice::IpmiV1HeaderSlice,
 };
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub struct IpmiV1Header {
     pub auth_type: AuthType,
     pub session_seq_number: u32,

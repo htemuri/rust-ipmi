@@ -5,7 +5,7 @@ use crate::ipmi::ipmi_v2_header_slice::IpmiV2HeaderSlice;
 
 use super::ipmi_header::{AuthType, IpmiHeader};
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub struct IpmiV2Header {
     pub auth_type: AuthType,
     pub payload_enc: bool,

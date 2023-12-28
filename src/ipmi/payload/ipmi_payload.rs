@@ -148,7 +148,7 @@ impl Lun {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum AddrType {
     SlaveAddress,
     SoftwareId,
@@ -169,7 +169,7 @@ impl AddrType {
         }
     }
 }
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum SoftwareType {
     Bios,
     SmiHandler,
