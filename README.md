@@ -7,12 +7,12 @@ IPMI through LAN rust client with support for IPMI V2/RMCP+.
 This is a hobby project to learn some rust, and is NOT a library meant for production use. If you would like a stable, well featured IPMI LAN client, look into ipmi-tool - a CLI tool which has been maintained for over a decade.
 
 
-### ⚠️ HAZARD WARNING ⚠️
+### ⚠️ Security WARNING ⚠️
 
 IPMI through LAN has multiple relatively well-documented security vulnerabilities. Here are a few suggestions to harden your security:
 - Change the default IPMI username
 - Keep port 623/UDP to the servers under a restrictive firewall
-- Do NOT directly expose your servers to the WAN
+- Do not directly expose your servers to the WAN
 
 <!-- ## Design documentation for rust-ipmi -->
 
