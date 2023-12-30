@@ -1,7 +1,7 @@
 use std::net::{Ipv4Addr, UdpSocket};
 
 use crate::{
-    helpers::utils::{aes_128_cbc_encrypt, hash_hmac_sha_256, pad_payload_bytes},
+    helpers::utils::{aes_128_cbc_encrypt, hash_hmac_sha_256},
     ipmi::{
         data::{
             app::{
@@ -328,6 +328,8 @@ impl Connection {
         let auth_vec = hash_hmac_sha_256(rakp2_mac_key.into(), rakp3_input_buffer);
         let sik = hash_hmac_sha_256(rakp2_mac_key.into(), session_integrity_key_input);
         self.k2 = hash_hmac_sha_256(sik.into(), [2; 20].into());
+
+        // aes_128_cbc_encrypt([0; 16], vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]);
 
         // send rakp message 3
         let rakp3_packet = RAKPMessage3::new(
