@@ -1,9 +1,4 @@
-use arrayvec::ArrayVec;
-
-use super::{
-    ipmi_header::{AuthType, IpmiHeader},
-    ipmi_v1_header_slice::IpmiV1HeaderSlice,
-};
+use super::{ipmi_header::AuthType, ipmi_v1_header_slice::IpmiV1HeaderSlice};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub struct IpmiV1Header {
@@ -47,12 +42,12 @@ impl IpmiV1Header {
         Ok((h.to_header(), &slice[h.slice().len()..]))
     }
 
-    pub fn to_bytes(&self) -> ArrayVec<u8, { IpmiHeader::MAX_LEN }> {
+    pub fn to_bytes(&self) -> Vec<u8> {
         match self.auth_type {
             AuthType::None => {
                 let seq_be = self.session_seq_number.to_be_bytes();
                 let ses_be = self.session_id.to_be_bytes();
-                let mut result = ArrayVec::new();
+                let mut result = Vec::new();
                 result.extend([
                     self.auth_type.to_u8(),
                     seq_be[0],
@@ -72,7 +67,7 @@ impl IpmiV1Header {
                 let seq_be = self.session_seq_number.to_be_bytes();
                 let ses_be = self.session_id.to_be_bytes();
                 let auth_be = self.auth_code.unwrap().to_be_bytes();
-                let mut result = ArrayVec::new();
+                let mut result = Vec::new();
                 result.extend([
                     self.auth_type.to_u8(),
                     seq_be[0],

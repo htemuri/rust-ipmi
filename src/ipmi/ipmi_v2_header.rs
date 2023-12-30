@@ -1,9 +1,8 @@
-use arrayvec::ArrayVec;
 use bitvec::{prelude::*, vec::BitVec};
 
 use crate::ipmi::ipmi_v2_header_slice::IpmiV2HeaderSlice;
 
-use super::ipmi_header::{AuthType, IpmiHeader};
+use super::ipmi_header::AuthType;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub struct IpmiV2Header {
@@ -50,7 +49,7 @@ impl IpmiV2Header {
         Ok((h.to_header(), &slice[h.slice().len()..]))
     }
 
-    pub fn to_bytes(&self) -> ArrayVec<u8, { IpmiHeader::MAX_LEN }> {
+    pub fn to_bytes(&self) -> Vec<u8> {
         match self.payload_type {
             PayloadType::OEM => {
                 let oem_iana_be = self.oem_iana.unwrap().to_le_bytes();
@@ -59,7 +58,7 @@ impl IpmiV2Header {
                 let ses_seq_be = self.session_seq_number.to_le_bytes();
                 let len_be = self.payload_length.to_le_bytes();
 
-                let mut result = ArrayVec::new();
+                let mut result = Vec::new();
                 result.extend([
                     self.auth_type.to_u8(),
                     {
@@ -99,7 +98,7 @@ impl IpmiV2Header {
                 let ses_seq_be = self.session_seq_number.to_le_bytes();
                 let len_be = self.payload_length.to_le_bytes();
 
-                let mut result = ArrayVec::new();
+                let mut result = Vec::new();
                 result.extend([
                     self.auth_type.to_u8(),
                     {

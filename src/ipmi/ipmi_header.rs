@@ -1,4 +1,3 @@
-use arrayvec::ArrayVec;
 use bitvec::{field::BitField, order::Msb0, slice::BitSlice};
 
 use super::{
@@ -68,7 +67,7 @@ impl IpmiHeader {
         }
     }
 
-    pub fn to_bytes(&self) -> ArrayVec<u8, { IpmiHeader::MAX_LEN }> {
+    pub fn to_bytes(&self) -> Vec<u8> {
         match self {
             IpmiHeader::V1_5(header) => header.to_bytes(),
             IpmiHeader::V2_0(header) => header.to_bytes(),
