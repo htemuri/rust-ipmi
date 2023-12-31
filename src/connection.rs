@@ -1,14 +1,14 @@
-use std::net::{Ipv4Addr, UdpSocket};
+use std::{
+    net::{Ipv4Addr, UdpSocket},
+    process::exit,
+};
 
 use crate::{
-    helpers::utils::{aes_128_cbc_encrypt, hash_hmac_sha_256},
+    helpers::utils::hash_hmac_sha_256,
     ipmi::{
         data::{
             app::{
-                channel::{
-                    self, GetChannelAuthCapabilitiesRequest, GetChannelAuthCapabilitiesResponse,
-                    Privilege,
-                },
+                channel::{self, GetChannelAuthCapabilitiesRequest, Privilege},
                 cipher::{GetChannelCipherSuitesRequest, GetChannelCipherSuitesResponse},
             },
             commands::Command,
@@ -124,12 +124,12 @@ impl Connection {
 
         while let Ok((n, _addr)) = self.client_socket.recv_from(&mut recv_buff) {
             // println!("response slice: {:x?}", &recv_buff[..n]);
-            let response = Packet::from_slice(&recv_buff[..n]);
+            let response = Packet::from_slice(&recv_buff[..n], None);
             if let Some(Payload::Ipmi(IpmiPayload::Response(payload))) = response.payload {
                 // println!("RESPONSE: {:?}", payload);
                 self.handle_completion_code(payload)
             } else {
-                println!("Not an IPMI Response!");
+                // println!("Not an IPMI Response!");
                 self.handle_status_code(response.payload);
                 if self.state == State::Established {
                     return;
@@ -142,9 +142,9 @@ impl Connection {
         match response_payload.completion_code {
             CompletionCode::CompletedNormally => match response_payload.command {
                 Command::GetChannelAuthCapabilities => {
-                    let response =
-                        GetChannelAuthCapabilitiesResponse::from_slice(&response_payload.data);
-                    println!("{:x?}", response);
+                    // let response: GetChannelAuthCapabilitiesResponse =
+                    //     GetChannelAuthCapabilitiesResponse::from_slice(&response_payload.data);
+                    // println!("{:x?}", response);
                     self.auth_type = AuthType::RmcpPlus;
                     let cipher_packet =
                         GetChannelCipherSuitesRequest::default().create_packet(self);
@@ -209,7 +209,7 @@ impl Connection {
         {
             match payload.rmcp_plus_status_code {
                 StatusCode::NoErrors => {
-                    println!("{:x?}", payload);
+                    // println!("{:x?}", payload);
                     self.state = State::Authentication;
                     self.max_privilege = payload.max_privilege;
                     self.managed_system_session_id = payload.managed_system_session_id.clone();
@@ -237,7 +237,7 @@ impl Connection {
         if let Some(Payload::RAKP(RAKP::Message2(payload))) = response_payload.clone() {
             match payload.rmcp_plus_status_code {
                 StatusCode::NoErrors => {
-                    println!("{:x?}", payload);
+                    // println!("{:x?}", payload);
                     let rakp3_packet = self.generate_rakp3_message(payload);
 
                     self.client_socket
@@ -272,8 +272,17 @@ impl Connection {
                         self.state = State::Established;
                     }
                 }
+                StatusCode::InvalidIntegrityCheckValue => {
+                    println!(
+                        "ERROR: {:?}. Please verify you have the correct credentials.",
+                        payload.rmcp_plus_status_code
+                    );
+                    todo!("make the function return an error class");
+                    // exit(-1);
+                }
                 _ => {
                     println!("{:?}", payload.rmcp_plus_status_code);
+                    exit(-1);
                 }
             }
         }
@@ -393,17 +402,17 @@ impl Connection {
 
         while let Ok((n, _addr)) = self.client_socket.recv_from(&mut recv_buff) {
             println!("raw request response slice: {:x?}", &recv_buff[..n]);
-            // let response = Packet::from_slice(&recv_buff[..n]);
-            // if let Some(Payload::Ipmi(IpmiPayload::Response(payload))) = response.payload {
-            //     // println!("RESPONSE: {:?}", payload);
-            //     self.handle_completion_code(payload)
-            // } else {
-            //     println!("Not an IPMI Response!");
-            //     self.handle_status_code(response.payload);
-            //     if self.state == State::Established {
-            //         return;
-            //     }
-            // }
+            let response = Packet::from_slice(&recv_buff[..n], Some(&self.k2));
+            if let Some(Payload::Ipmi(IpmiPayload::Response(payload))) = response.payload {
+                println!("RESPONSE: {:?}", payload);
+                // self.handle_completion_code(payload)
+            } else {
+                println!("Not an IPMI Response!");
+                // self.handle_status_code(response.payload);
+                // if self.state == State::Established {
+                //     return;
+                // }
+            }
         }
     }
 

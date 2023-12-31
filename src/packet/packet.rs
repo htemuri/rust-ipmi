@@ -1,9 +1,10 @@
 use crate::{
-    helpers::utils::{aes_128_cbc_encrypt, generate_iv, hash_hmac_sha_256},
+    connection::Connection,
+    helpers::utils::{aes_128_cbc_decrypt, aes_128_cbc_encrypt, generate_iv, hash_hmac_sha_256},
     ipmi::{
         ipmi_header::IpmiHeader,
         ipmi_v1_header::IpmiV1Header,
-        ipmi_v2_header::PayloadType,
+        ipmi_v2_header::{IpmiV2Header, PayloadType},
         payload::ipmi_payload::IpmiPayload,
         rmcp_payloads::{
             rakp::{RAKPMessage2, RAKPMessage4, RAKP},
@@ -29,34 +30,52 @@ impl Packet {
         }
     }
 
-    pub fn from_slice(slice: &[u8]) -> Packet {
+    pub fn from_slice(slice: &[u8], k2: Option<&[u8; 32]>) -> Packet {
         let nbytes: usize = slice.len();
         let ipmi_header_len = IpmiHeader::header_len(slice[4], slice[5]);
         let ipmi_header = IpmiHeader::from_slice(&slice[4..(ipmi_header_len + 4)]);
         let payload_length = ipmi_header.payload_len();
         // println!("payload length: {:x?}", payload_length);
+        let mut payload_vec = Vec::new();
+        if let IpmiHeader::V2_0(header) = ipmi_header {
+            if header.payload_enc {
+                // decrypt slice
 
+                let iv = &slice[16..32];
+                let binding = aes_128_cbc_decrypt(
+                    k2.unwrap()[..16].try_into().unwrap(),
+                    iv.try_into().unwrap(),
+                    slice[32..(32 + payload_length - 16)].to_vec(),
+                );
+                binding.iter().for_each(|byte| payload_vec.push(*byte))
+            } else {
+                payload_vec.extend_from_slice(&slice[(nbytes - payload_length)..nbytes])
+            }
+        } else {
+            payload_vec.extend_from_slice(&slice[(nbytes - payload_length)..nbytes])
+        }
+        // println!("Payload vec: {:x?}", payload_vec);
         Packet {
             rmcp_header: RmcpHeader::from_slice(&slice[..3]),
-            ipmi_header: IpmiHeader::from_slice(&slice[4..(ipmi_header_len + 4)]),
+            ipmi_header,
             payload: {
                 match payload_length {
                     0 => None,
                     _ => match ipmi_header.payload_type() {
                         PayloadType::IPMI => Some(Payload::Ipmi(IpmiPayload::from_slice(
-                            &slice[(nbytes - payload_length)..nbytes],
+                            payload_vec.as_slice(),
                         ))),
                         PayloadType::RcmpOpenSessionRequest => todo!(),
-                        PayloadType::RcmpOpenSessionResponse => Some(Payload::RMCP(
-                            RMCPPlusOpenSession::Response(RMCPPlusOpenSessionResponse::from_slice(
-                                &slice[(nbytes - payload_length)..nbytes],
-                            )),
-                        )),
+                        PayloadType::RcmpOpenSessionResponse => {
+                            Some(Payload::RMCP(RMCPPlusOpenSession::Response(
+                                RMCPPlusOpenSessionResponse::from_slice(payload_vec.as_slice()),
+                            )))
+                        }
                         PayloadType::RAKP2 => Some(Payload::RAKP(RAKP::Message2(
-                            RAKPMessage2::from_slice(&slice[(nbytes - payload_length)..nbytes]),
+                            RAKPMessage2::from_slice(payload_vec.as_slice()),
                         ))),
                         PayloadType::RAKP4 => Some(Payload::RAKP(RAKP::Message4(
-                            RAKPMessage4::from_slice(&slice[(nbytes - payload_length)..nbytes]),
+                            RAKPMessage4::from_slice(payload_vec.as_slice()),
                         ))),
                         _ => todo!(),
                     },

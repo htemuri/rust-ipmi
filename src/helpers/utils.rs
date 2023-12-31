@@ -64,10 +64,11 @@ pub fn aes_128_cbc_encrypt(key: [u8; 16], iv: [u8; 16], mut payload_bytes: Vec<u
     ct.to_vec()
 }
 
-pub fn aes_128_cbc_decrypt(key: [u8; 16], iv: [u8; 16], mut encrypted_bytes: Vec<u8>) -> Vec<u8> {
+pub fn aes_128_cbc_decrypt(key: [u8; 16], iv: [u8; 16], encrypted_bytes: Vec<u8>) -> Vec<u8> {
+    let mut old_encrypted = encrypted_bytes.clone();
     type Aes128CbcDec = cbc::Decryptor<aes::Aes128>;
     let ct = Aes128CbcDec::new(&key.into(), &iv.into())
-        .decrypt_padded_mut::<aes::cipher::block_padding::NoPadding>(&mut encrypted_bytes)
+        .decrypt_padded_mut::<aes::cipher::block_padding::NoPadding>(&mut old_encrypted)
         .unwrap()
         .to_vec();
     // structure of these packets is [[payload x bytes],[padding (1, 2, 3, 4, ...)], padding_length]
