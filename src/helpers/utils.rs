@@ -39,15 +39,19 @@ pub fn hash_hmac_sha_256(key: Vec<u8>, data: Vec<u8>) -> [u8; 32] {
     vec_bytes
 }
 
-pub fn aes_128_cbc_encrypt(key: [u8; 16], mut payload_bytes: Vec<u8>) -> Vec<u8> {
-    type Aes128CbcEnc = cbc::Encryptor<aes::Aes128>;
+pub fn generate_iv() -> [u8; 16] {
     let mut iv = [0; 16];
     for i in 0..iv.len() {
         iv[i] = rand::random::<u8>();
     }
+    iv
+}
+
+pub fn aes_128_cbc_encrypt(key: [u8; 16], iv: [u8; 16], mut payload_bytes: Vec<u8>) -> Vec<u8> {
+    type Aes128CbcEnc = cbc::Encryptor<aes::Aes128>;
     let binding = pad_payload_bytes(&mut payload_bytes);
     let plaintext = binding.as_slice();
-
+    // println!("encrypting this data: {:x?}", &plaintext);
     // encrypt in-place
     // buffer must be big enough for padded plaintext
     let mut buf = [0u8; 48];

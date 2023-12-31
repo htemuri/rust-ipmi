@@ -13,4 +13,5 @@ fn main() {
     // let rmcp_port = String::from("623");
     let mut connection = Connection::new(Ipv4Addr::from([192, 168, 88, 10]));
     connection.establish_connection(String::from("root"), String::from(""));
+    connection.send_raw_request();
 }

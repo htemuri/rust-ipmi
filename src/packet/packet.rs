@@ -1,4 +1,5 @@
 use crate::{
+    helpers::utils::{aes_128_cbc_encrypt, generate_iv, hash_hmac_sha_256},
     ipmi::{
         ipmi_header::IpmiHeader,
         ipmi_v1_header::IpmiV1Header,
@@ -81,6 +82,55 @@ impl Packet {
             }
         }
         result
+    }
+
+    pub fn to_encrypted_bytes(&self, k1: &[u8; 32], k2: &[u8; 32]) -> Option<Vec<u8>> {
+        if let IpmiHeader::V2_0(header) = self.ipmi_header {
+            let mut encrypted_packet: Vec<u8> = Vec::new();
+            let mut auth_code_input = header.to_bytes();
+            let iv = generate_iv();
+            // println!("using this iv: {:x?}", iv);
+            // println!("using this key for aes: {:x?}", &k2.clone()[..16]);
+            iv.map(|x| auth_code_input.push(x));
+            let encrypted_payload = aes_128_cbc_encrypt(
+                k2.clone()[..16].try_into().unwrap(), // aes 128 cbc wants the first 128 bits of k2 as the key
+                iv,
+                self.payload.clone().unwrap().to_bytes(),
+            );
+            encrypted_payload
+                .iter()
+                .for_each(|x| auth_code_input.push(*x));
+
+            // integrity padding
+            let padding_needed = 4 - ((auth_code_input.len() + 2) % 4);
+            for _ in 0..padding_needed {
+                auth_code_input.push(0xff);
+            }
+            auth_code_input.push(padding_needed.try_into().unwrap());
+            /*
+            **Next Header**. Reserved in IPMI v2.0. Set
+            to 07h for RMCP+ packets
+            defined in this specification.
+            */
+            auth_code_input.push(0x7);
+            // println!("auth_code input: {:x?}", auth_code_input);
+            // println!("using this key for sha256: {:x?}", &k1);
+            // hmac sha256-128 using k1 as key and auth_code input as input buffer
+            let auth_code = &hash_hmac_sha_256(k1.into(), auth_code_input.clone()); // choose first 128 bits for sha256_128
+                                                                                    // println!("auth_code output: {:x?}", &auth_code[..16]);
+            self.rmcp_header
+                .to_bytes()
+                .map(|header_byte| encrypted_packet.push(header_byte));
+            auth_code_input
+                .iter()
+                .for_each(|byte| encrypted_packet.push(*byte));
+            auth_code[..16]
+                .iter()
+                .for_each(|byte| encrypted_packet.push(*byte));
+            Some(encrypted_packet)
+        } else {
+            return None;
+        }
     }
 }
 

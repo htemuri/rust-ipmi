@@ -17,6 +17,7 @@ use crate::{
         payload::{
             ipmi_payload::IpmiPayload,
             ipmi_payload_response::{CompletionCode, IpmiPayloadResponse},
+            ipmi_raw_request::IpmiPayloadRawRequest,
         },
         rmcp_payloads::{
             rakp::{RAKPMessage1, RAKPMessage2, RAKPMessage3, RAKP},
@@ -39,7 +40,10 @@ pub struct Connection {
     password: Option<String>,
     managed_system_session_id: u32,
     max_privilege: Privilege,
+    managed_system_guid: u128,
     remote_console_random_number: u128,
+    sik: [u8; 32],
+    k1: [u8; 32],
     k2: [u8; 32],
 }
 #[derive(PartialEq)]
@@ -68,7 +72,13 @@ impl Connection {
             auth_type: AuthType::None,
             managed_system_session_id: 0,
             max_privilege: Privilege::Administrator,
-            remote_console_random_number: 0,
+            managed_system_guid: 0,
+            remote_console_random_number: u128::from_le_bytes([
+                0xd9, 0xd5, 0x10, 0xa0, 0x0b, 0xf4, 0x7e, 0xd1, 0xdb, 0x1f, 0xfe, 0x09, 0x2f, 0x84,
+                0x47, 0x91,
+            ]),
+            sik: [0; 32],
+            k1: [0; 32],
             k2: [0; 32],
         }
     }
@@ -86,9 +96,15 @@ impl Connection {
             username: Some(username),
             password: Some(password),
             auth_type: AuthType::RmcpPlus,
+            managed_system_guid: 0,
             managed_system_session_id: 0,
             max_privilege: Privilege::Administrator,
-            remote_console_random_number: 0,
+            remote_console_random_number: u128::from_le_bytes([
+                0xd9, 0xd5, 0x10, 0xa0, 0x0b, 0xf4, 0x7e, 0xd1, 0xdb, 0x1f, 0xfe, 0x09, 0x2f, 0x84,
+                0x47, 0x91,
+            ]),
+            sik: [0; 32],
+            k1: [0; 32],
             k2: [0; 32],
         }
     }
@@ -142,7 +158,7 @@ impl Connection {
                 Command::GetChannelCipherSuites => {
                     let response =
                         GetChannelCipherSuitesResponse::from_slice(&response_payload.data);
-                    println!("{:x?}", response);
+                    // println!("{:x?}", response);
                     match response.is_last() {
                         false => {
                             self.cipher_list_index += 1;
@@ -196,7 +212,7 @@ impl Connection {
                     println!("{:x?}", payload);
                     self.state = State::Authentication;
                     self.max_privilege = payload.max_privilege;
-                    self.managed_system_session_id = payload.managed_system_session_id;
+                    self.managed_system_session_id = payload.managed_system_session_id.clone();
                     // self.username = Some(String::from("root"));
                     // send rakp message 1
                     let rakp1_packet = RAKPMessage1::new(
@@ -237,9 +253,24 @@ impl Connection {
         if let Some(Payload::RAKP(RAKP::Message4(payload))) = response_payload.clone() {
             match payload.rmcp_plus_status_code {
                 StatusCode::NoErrors => {
-                    println!("{:x?}", payload);
-                    println!("RAKP COMPLETED!!!");
-                    self.state = State::Established;
+                    // println!("rak4: {:x?}", payload.integrity_check_value.unwrap());
+                    let mut input: Vec<u8> = Vec::new();
+                    self.remote_console_random_number
+                        .to_le_bytes()
+                        .map(|x| input.push(x));
+                    self.managed_system_session_id
+                        .to_le_bytes()
+                        .map(|x| input.push(x));
+                    self.managed_system_guid
+                        .to_le_bytes()
+                        .map(|x| input.push(x));
+                    let auth_code = hash_hmac_sha_256(self.sik.into(), input);
+                    // println!("auth code: {:x?}", &auth_code);
+
+                    if payload.integrity_check_value.clone().unwrap() == auth_code[..16] {
+                        println!("RAKP COMPLETED!!!");
+                        self.state = State::Established;
+                    }
                 }
                 _ => {
                     println!("{:?}", payload.rmcp_plus_status_code);
@@ -250,6 +281,7 @@ impl Connection {
 
     fn generate_rakp3_message(&mut self, rakp2_payload: RAKPMessage2) -> Packet {
         let mut rakp2_input_buffer = Vec::new();
+        self.managed_system_guid = rakp2_payload.managed_system_guid;
         rakp2_payload
             .remote_console_session_id
             .to_le_bytes()
@@ -316,7 +348,9 @@ impl Connection {
             .to_le_bytes()
             .map(|x| session_integrity_key_input.push(x));
 
-        session_integrity_key_input.push(self.max_privilege.to_u8());
+        // session_integrity_key_input.push(self.max_privilege.to_u8());
+        session_integrity_key_input.push(0x14); // no idea why this should be 10100b. docs say to do whole byte for max privelege which is 100b
+
         session_integrity_key_input.push(self.username.clone().unwrap().len().try_into().unwrap());
         self.username
             .clone()
@@ -326,11 +360,9 @@ impl Connection {
             .for_each(|char| session_integrity_key_input.push(char.clone()));
 
         let auth_vec = hash_hmac_sha_256(rakp2_mac_key.into(), rakp3_input_buffer);
-        let sik = hash_hmac_sha_256(rakp2_mac_key.into(), session_integrity_key_input);
-        self.k2 = hash_hmac_sha_256(sik.into(), [2; 20].into());
-
-        // aes_128_cbc_encrypt([0; 16], vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]);
-
+        self.sik = hash_hmac_sha_256(rakp2_mac_key.into(), session_integrity_key_input);
+        self.k1 = hash_hmac_sha_256(self.sik.into(), [1; 20].into());
+        self.k2 = hash_hmac_sha_256(self.sik.into(), [2; 20].into());
         // send rakp message 3
         let rakp3_packet = RAKPMessage3::new(
             0x0,
@@ -340,6 +372,39 @@ impl Connection {
         )
         .create_packet(&self);
         rakp3_packet
+    }
+
+    pub fn send_raw_request(&self) {
+        let raw_request = IpmiPayloadRawRequest::new(
+            crate::ipmi::payload::ipmi_payload::NetFn::App,
+            Command::SetSessionPrivilegeLevel,
+            Some(vec![0x4]),
+        )
+        .create_packet(self, self.managed_system_session_id, 0x0000000a);
+
+        // println!("raw request packet: {:x?}", raw_request.clone().to_bytes());
+        let raw_request_encrypted = raw_request.to_encrypted_bytes(&self.k1, &self.k2).unwrap();
+        // println!("raw request encrypted: {:x?}", raw_request_encrypted);
+        self.client_socket
+            .send(&raw_request_encrypted.as_slice())
+            .expect("couldn't send raw request");
+
+        let mut recv_buff = [0; 8092];
+
+        while let Ok((n, _addr)) = self.client_socket.recv_from(&mut recv_buff) {
+            println!("raw request response slice: {:x?}", &recv_buff[..n]);
+            // let response = Packet::from_slice(&recv_buff[..n]);
+            // if let Some(Payload::Ipmi(IpmiPayload::Response(payload))) = response.payload {
+            //     // println!("RESPONSE: {:?}", payload);
+            //     self.handle_completion_code(payload)
+            // } else {
+            //     println!("Not an IPMI Response!");
+            //     self.handle_status_code(response.payload);
+            //     if self.state == State::Established {
+            //         return;
+            //     }
+            // }
+        }
     }
 
     // pub fn get_device_id(&self) {
