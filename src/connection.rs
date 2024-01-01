@@ -1,7 +1,4 @@
-use std::{
-    net::{Ipv4Addr, UdpSocket},
-    process::exit,
-};
+use std::net::{Ipv4Addr, UdpSocket};
 
 use crate::{
     helpers::utils::hash_hmac_sha_256,
@@ -33,10 +30,9 @@ use crate::{
 pub struct Connection {
     state: State,
     cipher_list_index: u8,
-    pub client_socket: UdpSocket,
-    pub ipmi_server_ip_addr: Ipv4Addr,
+    client_socket: UdpSocket,
     pub auth_type: AuthType,
-    pub username: Option<String>,
+    username: Option<String>,
     password: Option<String>,
     managed_system_session_id: u32,
     max_privilege: Privilege,
@@ -51,6 +47,8 @@ pub enum State {
     Discovery,
     Authentication,
     Established,
+    AwaitingResponse,
+    ReceivedResponse,
 }
 
 impl Connection {
@@ -66,39 +64,13 @@ impl Connection {
                 socket
             },
             cipher_list_index: 0,
-            ipmi_server_ip_addr,
+
             username: None,
             password: None,
             auth_type: AuthType::None,
             managed_system_session_id: 0,
             max_privilege: Privilege::Administrator,
             managed_system_guid: 0,
-            remote_console_random_number: u128::from_le_bytes([
-                0xd9, 0xd5, 0x10, 0xa0, 0x0b, 0xf4, 0x7e, 0xd1, 0xdb, 0x1f, 0xfe, 0x09, 0x2f, 0x84,
-                0x47, 0x91,
-            ]),
-            sik: [0; 32],
-            k1: [0; 32],
-            k2: [0; 32],
-        }
-    }
-
-    pub fn new_with_auth(
-        ipmi_server_ip_addr: Ipv4Addr,
-        username: String,
-        password: String,
-    ) -> Connection {
-        Connection {
-            state: State::Discovery,
-            cipher_list_index: 0,
-            client_socket: { UdpSocket::bind("0.0.0.0:0").expect("Can't bind to the port") },
-            ipmi_server_ip_addr,
-            username: Some(username),
-            password: Some(password),
-            auth_type: AuthType::RmcpPlus,
-            managed_system_guid: 0,
-            managed_system_session_id: 0,
-            max_privilege: Privilege::Administrator,
             remote_console_random_number: u128::from_le_bytes([
                 0xd9, 0xd5, 0x10, 0xa0, 0x0b, 0xf4, 0x7e, 0xd1, 0xdb, 0x1f, 0xfe, 0x09, 0x2f, 0x84,
                 0x47, 0x91,
@@ -194,7 +166,8 @@ impl Connection {
                     }
                 }
                 _ => {
-                    println!("command of response: {:x?}", response_payload.command)
+                    println!("command of response: {:x?}", response_payload.command);
+                    self.state = State::ReceivedResponse;
                 }
             },
             _ => {
@@ -282,7 +255,7 @@ impl Connection {
                 }
                 _ => {
                     println!("{:?}", payload.rmcp_plus_status_code);
-                    exit(-1);
+                    // exit(-1);
                 }
             }
         }
@@ -383,7 +356,7 @@ impl Connection {
         rakp3_packet
     }
 
-    pub fn send_raw_request(&self) {
+    pub fn send_raw_request(&mut self) {
         let raw_request = IpmiPayloadRawRequest::new(
             crate::ipmi::payload::ipmi_payload::NetFn::App,
             Command::SetSessionPrivilegeLevel,
@@ -398,14 +371,20 @@ impl Connection {
             .send(&raw_request_encrypted.as_slice())
             .expect("couldn't send raw request");
 
+        self.state = State::AwaitingResponse;
+
         let mut recv_buff = [0; 8092];
 
         while let Ok((n, _addr)) = self.client_socket.recv_from(&mut recv_buff) {
-            println!("raw request response slice: {:x?}", &recv_buff[..n]);
+            // println!("raw request response slice: {:x?}", &recv_buff[..n]);
             let response = Packet::from_slice(&recv_buff[..n], Some(&self.k2));
             if let Some(Payload::Ipmi(IpmiPayload::Response(payload))) = response.payload {
-                println!("RESPONSE: {:?}", payload);
-                // self.handle_completion_code(payload)
+                // println!("RESPONSE: {:?}", payload);
+                dbg!(payload.clone());
+                self.handle_completion_code(payload);
+                if self.state == State::ReceivedResponse {
+                    return;
+                }
             } else {
                 println!("Not an IPMI Response!");
                 // self.handle_status_code(response.payload);
