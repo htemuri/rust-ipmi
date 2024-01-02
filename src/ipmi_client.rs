@@ -511,10 +511,7 @@ impl IPMIClient {
 enum AuthState {
     Discovery,
     Authentication,
-    RAKP1,
-    RAKP3,
     Established,
-    FailedToEstablish,
 }
 #[derive(Debug)]
 
