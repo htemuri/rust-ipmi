@@ -1,4 +1,5 @@
 use crate::ipmi::data::commands::Command;
+use crate::ipmi::ipmi_header::AuthType;
 use crate::packet::packet::Payload;
 use crate::{
     connection::Connection,
@@ -51,12 +52,12 @@ impl GetChannelCipherSuitesRequest {
         result
     }
 
-    pub fn create_packet(&self, con: &Connection) -> Packet {
+    pub fn create_packet(&self) -> Packet {
         let data_bytes = self.to_bytes();
         // println!("{:x?}", data_bytes);
         let packet = Packet::new(
             IpmiHeader::V2_0(IpmiV2Header {
-                auth_type: con.auth_type,
+                auth_type: AuthType::RmcpPlus,
                 payload_enc: false,
                 payload_auth: false,
                 payload_type: PayloadType::IPMI,
@@ -106,8 +107,19 @@ pub struct GetChannelCipherSuitesResponse {
     pub cypher_suite_record_data_bytes: Vec<u8>,
 }
 
+impl From<&[u8]> for GetChannelCipherSuitesResponse {
+    fn from(value: &[u8]) -> Self {
+        GetChannelCipherSuitesResponse::from_slice(value)
+    }
+}
+impl From<Vec<u8>> for GetChannelCipherSuitesResponse {
+    fn from(value: Vec<u8>) -> Self {
+        GetChannelCipherSuitesResponse::from_slice(value.as_slice())
+    }
+}
+
 impl GetChannelCipherSuitesResponse {
-    pub fn from_slice(slice: &[u8]) -> GetChannelCipherSuitesResponse {
+    fn from_slice(slice: &[u8]) -> GetChannelCipherSuitesResponse {
         GetChannelCipherSuitesResponse {
             channel_number: slice[0],
             cypher_suite_record_data_bytes: {

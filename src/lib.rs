@@ -7,7 +7,7 @@ mod packet;
 mod rmcp;
 
 pub use connection::Connection;
-pub use err::ipmi::IPMIClientError;
+// pub use err::IPMIClientError;
 pub use ipmi_client::IPMIClient;
 
 /*

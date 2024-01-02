@@ -1,5 +1,4 @@
 // use crate::ipmi::data::data::Data;
-
 use std::fmt::Debug;
 
 use bitvec::prelude::*;
@@ -62,7 +61,7 @@ impl GetChannelAuthCapabilitiesRequest {
 
     pub fn create_packet(
         &self,
-        con: &Connection,
+        auth_type: AuthType,
         session_seq_number: u32,
         session_id: u32,
         auth_code: Option<u128>,
@@ -71,7 +70,7 @@ impl GetChannelAuthCapabilitiesRequest {
         // println!("{:x?}", data_bytes);
         let packet = Packet::new(
             IpmiHeader::V1_5(IpmiV1Header {
-                auth_type: con.auth_type,
+                auth_type,
                 session_seq_number,
                 session_id,
                 auth_code,
@@ -101,8 +100,19 @@ pub struct GetChannelAuthCapabilitiesResponse {
     pub oem_aux_data: u8,
 }
 
+impl From<&[u8]> for GetChannelAuthCapabilitiesResponse {
+    fn from(value: &[u8]) -> Self {
+        GetChannelAuthCapabilitiesResponse::from_slice(value)
+    }
+}
+impl From<Vec<u8>> for GetChannelAuthCapabilitiesResponse {
+    fn from(value: Vec<u8>) -> Self {
+        GetChannelAuthCapabilitiesResponse::from_slice(value.as_slice())
+    }
+}
+
 impl GetChannelAuthCapabilitiesResponse {
-    pub fn from_slice(slice: &[u8]) -> GetChannelAuthCapabilitiesResponse {
+    fn from_slice(slice: &[u8]) -> GetChannelAuthCapabilitiesResponse {
         GetChannelAuthCapabilitiesResponse {
             channel_number: { slice[0] },
             auth_version: {

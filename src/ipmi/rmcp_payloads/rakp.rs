@@ -2,7 +2,7 @@ use crate::{
     connection::Connection,
     ipmi::{
         data::app::channel::Privilege,
-        ipmi_header::IpmiHeader,
+        ipmi_header::{AuthType, IpmiHeader},
         ipmi_v2_header::{IpmiV2Header, PayloadType},
     },
     packet::packet::{Packet, Payload},
@@ -84,10 +84,10 @@ impl RAKPMessage1 {
         result
     }
 
-    pub fn create_packet(&self, con: &Connection) -> Packet {
+    pub fn create_packet(&self) -> Packet {
         let packet = Packet::new(
             IpmiHeader::V2_0(IpmiV2Header::new(
-                con.auth_type,
+                AuthType::RmcpPlus,
                 false,
                 false,
                 PayloadType::RAKP1,
@@ -113,29 +113,44 @@ pub struct RAKPMessage2 {
 
 impl RAKPMessage2 {
     pub fn from_slice(slice: &[u8]) -> RAKPMessage2 {
-        RAKPMessage2 {
-            message_tag: slice[0],
-            rmcp_plus_status_code: StatusCode::from_u8(slice[1]),
-            remote_console_session_id: u32::from_le_bytes([slice[4], slice[5], slice[6], slice[7]]),
-            managed_system_random_number: u128::from_le_bytes([
-                slice[8], slice[9], slice[10], slice[11], slice[12], slice[13], slice[14],
-                slice[15], slice[16], slice[17], slice[18], slice[19], slice[20], slice[21],
-                slice[22], slice[23],
-            ]),
-            managed_system_guid: u128::from_le_bytes([
-                slice[24], slice[25], slice[26], slice[27], slice[28], slice[29], slice[30],
-                slice[31], slice[32], slice[33], slice[34], slice[35], slice[36], slice[37],
-                slice[38], slice[39],
-            ]),
-            key_exchange_auth_code: {
-                if slice.len() > 40 {
-                    let mut vec = Vec::new();
-                    vec.extend_from_slice(&slice[40..]);
-                    Some(vec)
-                } else {
-                    None
-                }
-            },
+        if slice.len() < 40 {
+            RAKPMessage2 {
+                message_tag: slice[0],
+                rmcp_plus_status_code: StatusCode::from_u8(slice[1]),
+                remote_console_session_id: u32::from_le_bytes([
+                    slice[4], slice[5], slice[6], slice[7],
+                ]),
+                managed_system_random_number: 0,
+                managed_system_guid: 0,
+                key_exchange_auth_code: None,
+            }
+        } else {
+            RAKPMessage2 {
+                message_tag: slice[0],
+                rmcp_plus_status_code: StatusCode::from_u8(slice[1]),
+                remote_console_session_id: u32::from_le_bytes([
+                    slice[4], slice[5], slice[6], slice[7],
+                ]),
+                managed_system_random_number: u128::from_le_bytes([
+                    slice[8], slice[9], slice[10], slice[11], slice[12], slice[13], slice[14],
+                    slice[15], slice[16], slice[17], slice[18], slice[19], slice[20], slice[21],
+                    slice[22], slice[23],
+                ]),
+                managed_system_guid: u128::from_le_bytes([
+                    slice[24], slice[25], slice[26], slice[27], slice[28], slice[29], slice[30],
+                    slice[31], slice[32], slice[33], slice[34], slice[35], slice[36], slice[37],
+                    slice[38], slice[39],
+                ]),
+                key_exchange_auth_code: {
+                    if slice.len() > 40 {
+                        let mut vec = Vec::new();
+                        vec.extend_from_slice(&slice[40..]);
+                        Some(vec)
+                    } else {
+                        None
+                    }
+                },
+            }
         }
     }
 }
@@ -175,10 +190,10 @@ impl RAKPMessage3 {
         result
     }
 
-    pub fn create_packet(&self, con: &Connection) -> Packet {
+    pub fn create_packet(&self) -> Packet {
         let packet = Packet::new(
             IpmiHeader::V2_0(IpmiV2Header::new(
-                con.auth_type,
+                AuthType::RmcpPlus,
                 false,
                 false,
                 PayloadType::RAKP3,

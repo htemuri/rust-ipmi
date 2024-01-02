@@ -75,3 +75,11 @@ pub fn aes_128_cbc_decrypt(key: [u8; 16], iv: [u8; 16], encrypted_bytes: Vec<u8>
     let number_of_padded_bytes: usize = ct[ct.len() - 1].into();
     ct[..(ct.len() - (number_of_padded_bytes + 1))].to_vec()
 }
+
+pub fn append_u32_to_vec(main_vec: &mut Vec<u8>, append: u32) {
+    append.to_le_bytes().map(|byte| main_vec.push(byte));
+}
+
+pub fn append_u128_to_vec(main_vec: &mut Vec<u8>, append: u128) {
+    append.to_le_bytes().map(|byte| main_vec.push(byte));
+}

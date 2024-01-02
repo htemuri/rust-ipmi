@@ -2,7 +2,7 @@ use crate::{
     connection::Connection,
     ipmi::{
         data::app::channel::Privilege,
-        ipmi_header::IpmiHeader,
+        ipmi_header::{AuthType, IpmiHeader},
         ipmi_v2_header::{IpmiV2Header, PayloadType},
     },
     packet::packet::{Packet, Payload},
@@ -154,10 +154,10 @@ impl RMCPPlusOpenSessionRequest {
         result
     }
 
-    pub fn create_packet(&self, con: &Connection) -> Packet {
+    pub fn create_packet(&self) -> Packet {
         let packet = Packet::new(
             IpmiHeader::V2_0(IpmiV2Header::new(
-                con.auth_type,
+                AuthType::RmcpPlus,
                 false,
                 false,
                 PayloadType::RcmpOpenSessionRequest,

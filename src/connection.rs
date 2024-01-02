@@ -5,7 +5,10 @@ use crate::{
     ipmi::{
         data::{
             app::{
-                channel::{self, GetChannelAuthCapabilitiesRequest, Privilege},
+                channel::{
+                    self, GetChannelAuthCapabilitiesRequest, GetChannelAuthCapabilitiesResponse,
+                    Privilege,
+                },
                 cipher::{GetChannelCipherSuitesRequest, GetChannelCipherSuitesResponse},
             },
             commands::Command,
@@ -86,7 +89,7 @@ impl Connection {
         self.password = Some(password);
         let discovery_req =
             GetChannelAuthCapabilitiesRequest::new(true, channel::Privilege::Administrator)
-                .create_packet(self, 0x00, 0x00, None);
+                .create_packet(AuthType::None, 0x00, 0x00, None);
 
         self.client_socket
             .send(&discovery_req.to_bytes())
@@ -114,12 +117,11 @@ impl Connection {
         match response_payload.completion_code {
             CompletionCode::CompletedNormally => match response_payload.command {
                 Command::GetChannelAuthCapabilities => {
-                    // let response: GetChannelAuthCapabilitiesResponse =
-                    //     GetChannelAuthCapabilitiesResponse::from_slice(&response_payload.data);
-                    // println!("{:x?}", response);
+                    let response: GetChannelAuthCapabilitiesResponse =
+                        GetChannelAuthCapabilitiesResponse::from(response_payload.data);
+                    println!("{:x?}", response);
                     self.auth_type = AuthType::RmcpPlus;
-                    let cipher_packet =
-                        GetChannelCipherSuitesRequest::default().create_packet(self);
+                    let cipher_packet = GetChannelCipherSuitesRequest::default().create_packet();
                     // println!("created packet");
                     // println!("FIRST CIPHER PACKET: {:x?}", cipher_packet);
                     self.client_socket
@@ -128,8 +130,7 @@ impl Connection {
                     // println!("sent packet");
                 }
                 Command::GetChannelCipherSuites => {
-                    let response =
-                        GetChannelCipherSuitesResponse::from_slice(&response_payload.data);
+                    let response = GetChannelCipherSuitesResponse::from(response_payload.data);
                     // println!("{:x?}", response);
                     match response.is_last() {
                         false => {
@@ -140,7 +141,7 @@ impl Connection {
                                 true,
                                 self.cipher_list_index,
                             )
-                            .create_packet(self);
+                            .create_packet();
                             // println!("reponse to cipher response: {:x?}", cipher_packet);
                             self.client_socket
                                 .send(&cipher_packet.to_bytes())
@@ -158,7 +159,7 @@ impl Connection {
                                 IntegrityAlgorithm::HmacSha256128,
                                 ConfidentialityAlgorithm::AesCbc128,
                             )
-                            .create_packet(&self);
+                            .create_packet();
                             self.client_socket
                                 .send(&rmcp_open_packet.to_bytes())
                                 .expect("couldn't send message");
@@ -196,7 +197,7 @@ impl Connection {
                         Privilege::Administrator,
                         self.username.clone().unwrap(),
                     )
-                    .create_packet(&self);
+                    .create_packet();
 
                     self.client_socket
                         .send(&rakp1_packet.to_bytes())
@@ -352,7 +353,7 @@ impl Connection {
             self.managed_system_session_id,
             Some(auth_vec.into()),
         )
-        .create_packet(&self);
+        .create_packet();
         rakp3_packet
     }
 
