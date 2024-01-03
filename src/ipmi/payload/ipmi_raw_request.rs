@@ -1,5 +1,4 @@
 use crate::{
-    connection::Connection,
     ipmi::{
         data::commands::Command,
         ipmi_header::IpmiHeader,
@@ -32,18 +31,13 @@ impl IpmiPayloadRawRequest {
         }
     }
 
-    pub fn create_packet(
-        &self,
-        con: &Connection,
-        rmcp_plus_session_id: u32,
-        session_seq_number: u32,
-    ) -> Packet {
+    pub fn create_packet(&self, rmcp_plus_session_id: u32, session_seq_number: u32) -> Packet {
         let netfn = self.netfn.clone();
         let cmd = self.command_code.clone();
         let data = self.data.clone();
         Packet::new(
             IpmiHeader::V2_0(IpmiV2Header {
-                auth_type: con.auth_type,
+                auth_type: crate::ipmi::ipmi_header::AuthType::RmcpPlus,
                 payload_enc: true,
                 payload_auth: true,
                 payload_type: PayloadType::IPMI,

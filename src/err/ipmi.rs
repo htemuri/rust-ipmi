@@ -2,9 +2,9 @@ use std::{io, num::TryFromIntError};
 
 use thiserror::Error;
 
-use crate::ipmi::rmcp_payloads::rmcp_open_session::StatusCode;
+use crate::{ipmi::rmcp_payloads::rmcp_open_session::StatusCode, NetFn};
 
-use super::PacketError;
+use super::{NetFnError, PacketError};
 
 #[derive(Error, Debug)]
 pub enum IPMIClientError {
@@ -14,7 +14,10 @@ pub enum IPMIClientError {
     ConnectToIPMIServer(#[source] io::Error),
     #[error("Failed to send packet due to: {0}")]
     FailedSend(#[source] io::Error),
-
+    #[error("Failed to set the socket read timeout: {0}")]
+    FailedSetSocketReadTimeout(#[from] io::Error),
+    #[error("{0}")]
+    NetFnError(#[from] NetFnError),
     #[error("Didn't recieve a response from remote controller")]
     NoResponse,
     #[error("Received incorrect payload type from remote controller")]
@@ -32,4 +35,6 @@ pub enum IPMIClientError {
     FailedToValidateRAKP2,
     #[error("Username too long")]
     UsernameOver255InLength(#[from] TryFromIntError),
+    #[error("Session not established yet")]
+    SessionNotEstablishedYet,
 }

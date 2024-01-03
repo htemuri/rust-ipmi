@@ -1,4 +1,4 @@
-use crate::ipmi::payload::ipmi_payload::NetFn;
+use crate::{err::CommandError, ipmi::payload::ipmi_payload::NetFn};
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum Command {
@@ -68,6 +68,19 @@ pub enum Command {
     // FirmwareFirewallConfiguration,
 }
 
+impl TryFrom<(u8, NetFn)> for Command {
+    type Error = CommandError;
+
+    fn try_from(value: (u8, NetFn)) -> Result<Self, CommandError> {
+        let command = Self::from_u8_and_netfn(value.0, value.1);
+        if let Command::Reserved = command {
+            Err(CommandError::UnknownCommandCode(value.0))
+        } else {
+            Ok(command)
+        }
+    }
+}
+
 impl Command {
     pub fn to_u8(&self) -> u8 {
         match self {
@@ -89,16 +102,4 @@ impl Command {
             _ => Command::Reserved,
         }
     }
-
-    // pub fn action(&self, command_type: CommandType) {
-    //     // match command to command function
-
-    //     // match self {
-    //     //     Command::GetChannelAuthCapabilities => {
-    //     //         match command_type {
-    //     //             CommandType::Request =>
-    //     //         }
-    //     //     }
-    //     // }
-    // }
 }

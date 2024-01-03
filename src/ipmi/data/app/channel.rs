@@ -4,7 +4,6 @@ use std::fmt::Debug;
 use bitvec::prelude::*;
 
 use crate::{
-    connection::Connection,
     ipmi::{
         data::commands::Command,
         ipmi_header::{AuthType, IpmiHeader},

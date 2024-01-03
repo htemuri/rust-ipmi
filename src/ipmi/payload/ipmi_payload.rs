@@ -1,4 +1,9 @@
+use std::num::TryFromIntError;
+
 use bitvec::{field::BitField, order::Msb0, slice::BitSlice};
+use hmac::digest::block_buffer::Error;
+
+use crate::err::NetFnError;
 
 use super::ipmi_payload_request::IpmiPayloadRequest;
 use super::ipmi_payload_response::IpmiPayloadResponse;
@@ -44,6 +49,23 @@ pub enum NetFn {
     Transport,
     Reserved,
     Unknown(u8),
+}
+
+impl TryFrom<u8> for NetFn {
+    type Error = NetFnError;
+    fn try_from(value: u8) -> Result<Self, NetFnError> {
+        match value {
+            0x00..=0x01 => Ok(NetFn::Chassis),
+            0x02..=0x03 => Ok(NetFn::Bridge),
+            0x04..=0x05 => Ok(NetFn::SensorEvent),
+            0x06..=0x07 => Ok(NetFn::App),
+            0x08..=0x09 => Ok(NetFn::Firmware),
+            0x0A..=0x0B => Ok(NetFn::Storage),
+            0x0C..=0x0D => Ok(NetFn::Transport),
+            0x0E..=0x2B => Ok(NetFn::Reserved),
+            _ => Err(NetFnError::UnknownNetFn(value)),
+        }
+    }
 }
 
 impl NetFn {

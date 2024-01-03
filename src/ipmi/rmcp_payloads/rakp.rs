@@ -1,5 +1,4 @@
 use crate::{
-    connection::Connection,
     ipmi::{
         data::app::channel::Privilege,
         ipmi_header::{AuthType, IpmiHeader},

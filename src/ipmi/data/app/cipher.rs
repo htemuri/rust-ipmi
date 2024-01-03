@@ -2,7 +2,6 @@ use crate::ipmi::data::commands::Command;
 use crate::ipmi::ipmi_header::AuthType;
 use crate::packet::packet::Payload;
 use crate::{
-    connection::Connection,
     helpers::utils::join_two_bits_to_byte,
     ipmi::{
         ipmi_header::IpmiHeader,
