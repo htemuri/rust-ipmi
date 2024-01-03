@@ -4,6 +4,7 @@ fn main() {
     let mut client = IPMIClient::new("192.168.88.10:623").expect("Failed to create ipmi client");
     let _ = client
         .establish_connection("root", "")
+        // .expect("panic");
         .map_err(|e| println!("{}", e.to_string()));
     let res = client
         .send_raw_request(

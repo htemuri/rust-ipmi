@@ -301,8 +301,6 @@ impl IPMIClient {
 
         let mut recv_buff = [0; 8092];
 
-        // self.client_socket.
-
         if let Ok((n_bytes, _addr)) = self.client_socket.recv_from(&mut recv_buff) {
             let response_slice = &recv_buff[..n_bytes];
             let response_packet: Packet;

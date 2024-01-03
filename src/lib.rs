@@ -4,7 +4,7 @@ mod helpers;
 mod ipmi;
 mod ipmi_client;
 mod packet;
-mod rmcp;
+mod parser;
 
 // pub use connection::Connection;
 // pub use err::IPMIClientError;
