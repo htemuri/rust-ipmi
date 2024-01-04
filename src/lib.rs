@@ -3,7 +3,6 @@ mod err;
 mod helpers;
 mod ipmi;
 mod ipmi_client;
-mod packet;
 mod parser;
 
 // pub use connection::Connection;

@@ -1,7 +1,6 @@
 use crate::{
     ipmi::data::app::channel::Privilege,
-    packet::packet::{Packet, Payload},
-    parser::{AuthType, IpmiHeader, IpmiV2Header, PayloadType},
+    parser::{AuthType, IpmiHeader, IpmiV2Header, Packet, Payload, PayloadType},
 };
 
 use bitvec::prelude::*;

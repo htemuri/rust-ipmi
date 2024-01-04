@@ -26,12 +26,11 @@ use crate::{
             },
         },
     },
-    packet::packet::{Packet, Payload},
     parser::{
         ipmi_payload::{IpmiPayload, NetFn},
         ipmi_payload_response::{CompletionCode, IpmiPayloadResponse},
         ipmi_raw_request::IpmiPayloadRawRequest,
-        AuthType, PayloadType,
+        AuthType, Packet, Payload, PayloadType,
     },
 };
 

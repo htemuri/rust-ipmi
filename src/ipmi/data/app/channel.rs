@@ -5,10 +5,9 @@ use bitvec::prelude::*;
 
 use crate::{
     ipmi::data::commands::Command,
-    packet::packet::{Packet, Payload},
     parser::{
         ipmi_payload::IpmiPayload, ipmi_payload_request::IpmiPayloadRequest, AuthType, IpmiHeader,
-        IpmiV1Header,
+        IpmiV1Header, Packet, Payload,
     },
     NetFn,
 };

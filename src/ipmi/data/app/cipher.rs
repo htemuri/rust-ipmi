@@ -1,10 +1,9 @@
+use crate::helpers::utils::join_two_bits_to_byte;
 use crate::ipmi::data::commands::Command;
-use crate::packet::packet::Payload;
 use crate::parser::ipmi_payload::IpmiPayload;
 use crate::parser::ipmi_payload_request::IpmiPayloadRequest;
-use crate::parser::{AuthType, IpmiHeader, IpmiV2Header, PayloadType};
+use crate::parser::{AuthType, IpmiHeader, IpmiV2Header, Packet, Payload, PayloadType};
 use crate::NetFn;
-use crate::{helpers::utils::join_two_bits_to_byte, packet::packet::Packet};
 use bitvec::prelude::*;
 
 pub struct GetChannelCipherSuitesRequest {
