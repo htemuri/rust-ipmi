@@ -1,4 +1,4 @@
-use crate::ipmi::ipmi_header::AuthType;
+use crate::parser::AuthType;
 
 #[derive(Debug, Eq, PartialEq, Hash)]
 pub struct GetSessionChallengeRequest {

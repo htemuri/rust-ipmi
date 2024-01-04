@@ -1,4 +1,4 @@
-use crate::{err::CommandError, ipmi::payload::ipmi_payload::NetFn};
+use crate::{err::CommandError, NetFn};
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum Command {
@@ -77,6 +77,17 @@ impl TryFrom<(u8, NetFn)> for Command {
             Err(CommandError::UnknownCommandCode(value.0))
         } else {
             Ok(command)
+        }
+    }
+}
+
+impl Into<u8> for Command {
+    fn into(self) -> u8 {
+        match self {
+            Command::GetChannelAuthCapabilities => 0x38,
+            Command::GetChannelCipherSuites => 0x54,
+            Command::SetSessionPrivilegeLevel => 0x3b,
+            Command::Reserved => 0x00,
         }
     }
 }

@@ -4,16 +4,13 @@ use std::fmt::Debug;
 use bitvec::prelude::*;
 
 use crate::{
-    ipmi::{
-        data::commands::Command,
-        ipmi_header::{AuthType, IpmiHeader},
-        ipmi_v1_header::IpmiV1Header,
-        payload::{
-            ipmi_payload::{IpmiPayload, NetFn},
-            ipmi_payload_request::IpmiPayloadRequest,
-        },
-    },
+    ipmi::data::commands::Command,
     packet::packet::{Packet, Payload},
+    parser::{
+        ipmi_payload::IpmiPayload, ipmi_payload_request::IpmiPayloadRequest, AuthType, IpmiHeader,
+        IpmiV1Header,
+    },
+    NetFn,
 };
 
 #[derive(Debug, Eq, PartialEq, Hash)]
@@ -126,9 +123,6 @@ impl GetChannelAuthCapabilitiesResponse {
                 }
                 if bv[3] {
                     result.push(AuthType::PasswordOrKey)
-                }
-                if bv[4] {
-                    result.push(AuthType::Reserved)
                 }
                 if bv[5] {
                     result.push(AuthType::MD5)

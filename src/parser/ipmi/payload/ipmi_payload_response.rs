@@ -1,7 +1,9 @@
 // use bitvec::prelude::*;
+use bitvec::{field::BitField, order::Msb0, slice::BitSlice};
 
-use crate::ipmi::{
-    data::commands::Command, payload::ipmi_payload_response_slice::IpmiPayloadResponseSlice,
+use crate::{
+    err::{IpmiPayloadError, IpmiPayloadRequestError},
+    ipmi::data::commands::Command,
 };
 
 use super::ipmi_payload::{AddrType, Lun, NetFn, SlaveAddress, SoftwareType};
@@ -21,34 +23,80 @@ pub struct IpmiPayloadResponse {
     pub rs_lun: Lun,
     pub command: Command,
     pub completion_code: CompletionCode,
-    pub data: Vec<u8>,
+    pub data: Option<Vec<u8>>,
     // checksum 2
 }
 
+impl TryFrom<&[u8]> for IpmiPayloadResponse {
+    type Error = IpmiPayloadError;
+
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+        if value.len() < 8 {
+            Err(IpmiPayloadRequestError::WrongLength)?
+        }
+        let rq_addr_byte = BitSlice::<u8, Msb0>::from_element(&value[0]);
+        let rs_addr_byte = BitSlice::<u8, Msb0>::from_element(&value[3]);
+
+        let rs_addr_type: AddrType = rs_addr_byte[0].into();
+        let rq_addr_type: AddrType = rq_addr_byte[0].into();
+
+        let netfn_rqlun = BitSlice::<u8, Msb0>::from_element(&value[1]);
+        let rqseq_rslun = BitSlice::<u8, Msb0>::from_element(&value[4]);
+
+        let net_fn: NetFn = netfn_rqlun[0..6].load::<u8>().try_into()?;
+
+        Ok(IpmiPayloadResponse {
+            rs_addr_type,
+            rs_slave_address_type: match rs_addr_type {
+                AddrType::SlaveAddress => Some(rs_addr_byte[1..].load::<u8>().into()),
+                AddrType::SoftwareId => None,
+            },
+            rs_software_type: match rs_addr_type {
+                AddrType::SoftwareId => Some(rs_addr_byte[1..].load::<u8>().into()),
+                AddrType::SlaveAddress => None,
+            },
+            net_fn: net_fn.clone(),
+            rq_lun: netfn_rqlun[7..8].load::<u8>().try_into()?,
+            rq_addr_type,
+            rq_slave_address_type: match rq_addr_type {
+                AddrType::SlaveAddress => Some(rq_addr_byte[1..].load::<u8>().into()),
+                AddrType::SoftwareId => None,
+            },
+            rq_software_type: match rq_addr_type {
+                AddrType::SoftwareId => Some(rq_addr_byte[1..].load::<u8>().into()),
+                AddrType::SlaveAddress => None,
+            },
+            rq_sequence: rqseq_rslun[0..6].load::<u8>(),
+            rs_lun: rqseq_rslun[7..8].load::<u8>().try_into()?,
+            command: (value[5], net_fn.into()).try_into()?,
+            completion_code: value[6].into(),
+            data: {
+                let len = value.len() - 1;
+                if len == 7 {
+                    None
+                } else {
+                    Some(value[7..len].into())
+                }
+            },
+        })
+    }
+}
+
 impl IpmiPayloadResponse {
-    // fn join_two_bits_to_byte(first: u8, second: u8, split_index: usize) -> u8 {
-    //     let mut bv: BitVec<u8, Msb0> = bitvec![u8, Msb0; 0;8];
-    //     bv[..split_index].store::<u8>(first);
-    //     bv[split_index..].store::<u8>(second);
-    //     bv[..].load::<u8>()
-    // }
-
-    // fn get8bit_checksum(byte_array: &[u8]) -> u8 {
-    //     let answer: u8 = byte_array.iter().fold(0, |a, &b| a.wrapping_add(b));
-    //     255 - answer + 1
-    // }
-
     pub fn payload_length(&self) -> usize {
-        self.data.len() + 8
+        match &self.data {
+            Some(d) => d.len() + 8,
+            None => 8,
+        }
     }
 
     // returns the payload as an object and the length of the payload
-    pub fn from_slice(slice: &[u8]) -> IpmiPayloadResponse {
-        let h = IpmiPayloadResponseSlice::from_slice(slice).unwrap();
-        // println!("{:x?}", h.to_header());
-        // Ok(h.to_header())
-        h.to_header()
-    }
+    // pub fn from_slice(slice: &[u8]) -> IpmiPayloadResponse {
+    //     let h = IpmiPayloadResponseSlice::from_slice(slice).unwrap();
+    //     // println!("{:x?}", h.to_header());
+    //     // Ok(h.to_header())
+    //     h.to_header()
+    // }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
@@ -81,6 +129,41 @@ pub enum CompletionCode {
     OEM(u8),
     CommandCode(u8),
     Reserved(u8),
+}
+
+impl From<u8> for CompletionCode {
+    fn from(value: u8) -> Self {
+        match value {
+            0x0 => CompletionCode::CompletedNormally,
+            0xc0 => CompletionCode::NodeBusy,
+            0xc1 => CompletionCode::InvalidCommand,
+            0xc2 => CompletionCode::InvalidCommandForLun,
+            0xc3 => CompletionCode::Timeout,
+            0xc4 => CompletionCode::OutOfSpace,
+            0xc5 => CompletionCode::ReservationCancelled,
+            0xc6 => CompletionCode::RequestDataTruncated,
+            0xc7 => CompletionCode::RequestDataLengthInvalid,
+            0xc8 => CompletionCode::RequestDataFieldLengthLimitExceeded,
+            0xc9 => CompletionCode::ParameterOutOfRange,
+            0xca => CompletionCode::CannotReturnNumberOfRqDataBytes,
+            0xcb => CompletionCode::RqSensorDataRecordNotPresent,
+            0xcc => CompletionCode::InvalidDataFieldInRequest,
+            0xcd => CompletionCode::CommandIllegalForSensor,
+            0xce => CompletionCode::CommandResponseNotProvided,
+            0xcf => CompletionCode::CantExecuteDuplicateRq,
+            0xd0 => CompletionCode::FailedSDRUpdateMode,
+            0xd1 => CompletionCode::FailedDevFirmwareMode,
+            0xd2 => CompletionCode::FailedInitInProgress,
+            0xd3 => CompletionCode::DestinationUnavailable,
+            0xd4 => CompletionCode::CannotExecuteCommandInsuffientPrivileges,
+            0xd5 => CompletionCode::CommandSubFunctionUnavailable,
+            0xd6 => CompletionCode::CannotExecuteCommandIllegalParam,
+            0xff => CompletionCode::UnspecifiedError,
+            0x01..=0x7e => CompletionCode::OEM(value),
+            0x80..=0xbe => CompletionCode::CommandCode(value),
+            _ => CompletionCode::Reserved(value),
+        }
+    }
 }
 
 impl CompletionCode {

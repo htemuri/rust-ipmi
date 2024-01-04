@@ -1,7 +1,7 @@
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-pub enum RMCPError {
+pub enum RMCPHeaderError {
     #[error("Length of slice should be 4 bytes")]
     WrongLength,
     #[error("Failed to parse slice to rmcp header")]

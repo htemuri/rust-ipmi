@@ -1,17 +1,11 @@
 use crate::{
     err::PacketError,
     helpers::utils::{aes_128_cbc_decrypt, aes_128_cbc_encrypt, generate_iv, hash_hmac_sha_256},
-    ipmi::{
-        ipmi_header::IpmiHeader,
-        ipmi_v1_header::IpmiV1Header,
-        ipmi_v2_header::{IpmiV2Header, PayloadType},
-        payload::ipmi_payload::IpmiPayload,
-        rmcp_payloads::{
-            rakp::{RAKPMessage2, RAKPMessage4, RAKP},
-            rmcp_open_session::{RMCPPlusOpenSession, RMCPPlusOpenSessionResponse},
-        },
+    ipmi::rmcp_payloads::{
+        rakp::{RAKPMessage2, RAKPMessage4, RAKP},
+        rmcp_open_session::{RMCPPlusOpenSession, RMCPPlusOpenSessionResponse},
     },
-    parser::RmcpHeader,
+    parser::{ipmi_payload::IpmiPayload, IpmiHeader, IpmiV1Header, PayloadType, RmcpHeader},
 };
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
@@ -25,10 +19,13 @@ impl TryFrom<&[u8]> for Packet {
     type Error = PacketError;
     fn try_from(value: &[u8]) -> Result<Self, PacketError> {
         let nbytes: usize = value.len();
-        let ipmi_header_len = IpmiHeader::header_len(value[4], value[5]);
-        let ipmi_header = IpmiHeader::from_slice(&value[4..(ipmi_header_len + 4)]);
+        if nbytes < 20 {
+            Err(PacketError::WrongLength)?
+        }
+        let ipmi_header_len = IpmiHeader::header_len(value[4], value[5])?;
+        let ipmi_header: IpmiHeader = value[4..(ipmi_header_len + 4)].try_into()?;
+        // let ipmi_header = IpmiHeader::from_slice(&value[4..(ipmi_header_len + 4)]);
         let payload_length = ipmi_header.payload_len();
-        // println!("payload length: {:x?}", payload_length);
         let mut payload_vec = Vec::new();
         payload_vec.extend_from_slice(&value[(nbytes - payload_length)..nbytes]);
         // println!("Payload vec: {:x?}", payload_vec);
@@ -39,9 +36,9 @@ impl TryFrom<&[u8]> for Packet {
                 match payload_length {
                     0 => None,
                     _ => match ipmi_header.payload_type() {
-                        PayloadType::IPMI => Some(Payload::Ipmi(IpmiPayload::from_slice(
-                            payload_vec.as_slice(),
-                        ))),
+                        PayloadType::IPMI => {
+                            Some(Payload::Ipmi(payload_vec.as_slice().try_into()?))
+                        }
                         PayloadType::RcmpOpenSessionRequest => todo!(),
                         PayloadType::RcmpOpenSessionResponse => {
                             Some(Payload::RMCP(RMCPPlusOpenSession::Response(
@@ -67,15 +64,16 @@ impl TryFrom<(&[u8], &[u8; 32])> for Packet {
 
     fn try_from(value: (&[u8], &[u8; 32])) -> Result<Self, PacketError> {
         let nbytes: usize = value.0.len();
-        let ipmi_header_len = IpmiHeader::header_len(value.0[4], value.0[5]);
-        let ipmi_header = IpmiHeader::from_slice(&value.0[4..(ipmi_header_len + 4)]);
+        if nbytes < 20 {
+            Err(PacketError::WrongLength)?
+        }
+        let ipmi_header_len = IpmiHeader::header_len(value.0[4], value.0[5])?;
+        let ipmi_header: IpmiHeader = value.0[4..(ipmi_header_len + 4)].try_into()?;
         let payload_length = ipmi_header.payload_len();
-        // println!("payload length: {:x?}", payload_length);
         let mut payload_vec = Vec::new();
         if let IpmiHeader::V2_0(header) = ipmi_header {
             if header.payload_enc {
                 // decrypt slice
-
                 let iv = &value.0[16..32];
                 let binding = aes_128_cbc_decrypt(
                     value.1[..16].try_into().unwrap(),
@@ -97,9 +95,9 @@ impl TryFrom<(&[u8], &[u8; 32])> for Packet {
                 match payload_length {
                     0 => None,
                     _ => match ipmi_header.payload_type() {
-                        PayloadType::IPMI => Some(Payload::Ipmi(IpmiPayload::from_slice(
-                            payload_vec.as_slice(),
-                        ))),
+                        PayloadType::IPMI => {
+                            Some(Payload::Ipmi(payload_vec.as_slice().try_into()?))
+                        }
                         PayloadType::RcmpOpenSessionRequest => todo!(),
                         PayloadType::RcmpOpenSessionResponse => {
                             Some(Payload::RMCP(RMCPPlusOpenSession::Response(
@@ -120,6 +118,19 @@ impl TryFrom<(&[u8], &[u8; 32])> for Packet {
     }
 }
 
+impl Into<Vec<u8>> for Packet {
+    fn into(self) -> Vec<u8> {
+        let mut result = Vec::new();
+        result.append(&mut self.rmcp_header.into());
+        result.append(&mut self.ipmi_header.clone().into());
+        match &self.payload {
+            None => {}
+            Some(a) => result.append(&mut a.clone().into()),
+        }
+        result
+    }
+}
+
 impl Packet {
     pub fn new(ipmi_header: IpmiHeader, payload: Payload) -> Packet {
         Packet {
@@ -128,36 +139,17 @@ impl Packet {
             payload: Some(payload),
         }
     }
-
-    pub fn to_bytes(&self) -> Vec<u8> {
-        let mut result = Vec::new();
-        result.append(&mut self.rmcp_header.into());
-
-        for &byte in self.ipmi_header.to_bytes().iter() {
-            result.push(byte);
-        }
-        match &self.payload {
-            None => {}
-            Some(a) => {
-                for &byte in a.to_bytes().iter() {
-                    result.push(byte);
-                }
-            }
-        }
-        result
-    }
-
     pub fn to_encrypted_bytes(&self, k1: &[u8; 32], k2: &[u8; 32]) -> Option<Vec<u8>> {
         if let IpmiHeader::V2_0(header) = self.ipmi_header {
             let mut encrypted_packet: Vec<u8> = Vec::new();
-            let mut auth_code_input = header.to_bytes();
+            let mut auth_code_input: Vec<u8> = header.into();
             let iv = generate_iv();
             auth_code_input.extend(&iv);
 
             let mut encrypted_payload = aes_128_cbc_encrypt(
                 k2.clone()[..16].try_into().unwrap(), // aes 128 cbc wants the first 128 bits of k2 as the key
                 iv,
-                self.payload.clone().unwrap().to_bytes(),
+                self.payload.clone().unwrap().into(),
             );
             auth_code_input.append(&mut encrypted_payload);
 
@@ -202,8 +194,8 @@ pub enum Payload {
     RAKP(RAKP),
 }
 
-impl Payload {
-    pub fn to_bytes(&self) -> Vec<u8> {
+impl Into<Vec<u8>> for Payload {
+    fn into(self) -> Vec<u8> {
         match self {
             Payload::Ipmi(payload) => payload.to_bytes(),
             Payload::RMCP(payload) => payload.to_bytes(),

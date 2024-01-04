@@ -1,10 +1,7 @@
 use crate::{
-    ipmi::{
-        data::commands::Command,
-        ipmi_header::IpmiHeader,
-        ipmi_v2_header::{IpmiV2Header, PayloadType},
-    },
+    ipmi::data::commands::Command,
     packet::packet::{Packet, Payload},
+    parser::{AuthType, IpmiHeader, IpmiV2Header, PayloadType},
 };
 
 use super::{
@@ -37,7 +34,7 @@ impl IpmiPayloadRawRequest {
         let data = self.data.clone();
         Packet::new(
             IpmiHeader::V2_0(IpmiV2Header {
-                auth_type: crate::ipmi::ipmi_header::AuthType::RmcpPlus,
+                auth_type: AuthType::RmcpPlus,
                 payload_enc: true,
                 payload_auth: true,
                 payload_type: PayloadType::IPMI,

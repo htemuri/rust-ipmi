@@ -1,18 +1,10 @@
 use crate::ipmi::data::commands::Command;
-use crate::ipmi::ipmi_header::AuthType;
 use crate::packet::packet::Payload;
-use crate::{
-    helpers::utils::join_two_bits_to_byte,
-    ipmi::{
-        ipmi_header::IpmiHeader,
-        ipmi_v2_header::{IpmiV2Header, PayloadType},
-        payload::{
-            ipmi_payload::{IpmiPayload, NetFn},
-            ipmi_payload_request::IpmiPayloadRequest,
-        },
-    },
-    packet::packet::Packet,
-};
+use crate::parser::ipmi_payload::IpmiPayload;
+use crate::parser::ipmi_payload_request::IpmiPayloadRequest;
+use crate::parser::{AuthType, IpmiHeader, IpmiV2Header, PayloadType};
+use crate::NetFn;
+use crate::{helpers::utils::join_two_bits_to_byte, packet::packet::Packet};
 use bitvec::prelude::*;
 
 pub struct GetChannelCipherSuitesRequest {
@@ -40,7 +32,7 @@ impl GetChannelCipherSuitesRequest {
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut result = Vec::new();
         result.push(join_two_bits_to_byte(0, self.channel_number, 4));
-        result.push(join_two_bits_to_byte(0, self.payload_type.to_u8(), 3));
+        result.push(join_two_bits_to_byte(0, self.payload_type.into(), 3));
         result.push({
             let mut bv: BitVec<u8, Msb0> = bitvec![u8, Msb0; 0;8];
             *bv.get_mut(0).unwrap() = self.list_algo_cipher_suite;

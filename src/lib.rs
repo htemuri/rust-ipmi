@@ -9,8 +9,8 @@ mod parser;
 // pub use connection::Connection;
 // pub use err::IPMIClientError;
 pub use ipmi::data::commands::Command;
-pub use ipmi::payload::ipmi_payload::NetFn;
 pub use ipmi_client::IPMIClient;
+pub use parser::ipmi_payload::NetFn;
 /*
 uses:
 

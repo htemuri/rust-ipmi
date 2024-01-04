@@ -10,6 +10,11 @@ pub fn join_two_bits_to_byte(first: u8, second: u8, split_index: usize) -> u8 {
     bv[..].load::<u8>()
 }
 
+pub fn get8bit_checksum(byte_array: &[u8]) -> u8 {
+    let answer: u8 = byte_array.iter().fold(0, |a, &b| a.wrapping_add(b));
+    255 - answer + 1
+}
+
 fn pad_payload_bytes(data: &mut Vec<u8>) -> Vec<u8> {
     let length = &data.len();
     if length % 16 == 0 {

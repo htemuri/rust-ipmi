@@ -12,19 +12,11 @@ use crate::{
             app::{
                 channel::{
                     AuthVersion, GetChannelAuthCapabilitiesRequest,
-                    GetChannelAuthCapabilitiesResponse, Privilege, KG,
+                    GetChannelAuthCapabilitiesResponse, Privilege,
                 },
                 cipher::{GetChannelCipherSuitesRequest, GetChannelCipherSuitesResponse},
             },
             commands::Command,
-        },
-        ipmi_header::AuthType,
-        ipmi_v2_header::PayloadType,
-        payload::{
-            self,
-            ipmi_payload::{IpmiPayload, NetFn},
-            ipmi_payload_response::{CompletionCode, IpmiPayloadResponse},
-            ipmi_raw_request::IpmiPayloadRawRequest,
         },
         rmcp_payloads::{
             rakp::{RAKPMessage1, RAKPMessage2, RAKPMessage3, RAKP},
@@ -34,9 +26,12 @@ use crate::{
             },
         },
     },
-    packet::{
-        self,
-        packet::{Packet, Payload},
+    packet::packet::{Packet, Payload},
+    parser::{
+        ipmi_payload::{IpmiPayload, NetFn},
+        ipmi_payload_response::{CompletionCode, IpmiPayloadResponse},
+        ipmi_raw_request::IpmiPayloadRawRequest,
+        AuthType, PayloadType,
     },
 };
 
@@ -293,8 +288,9 @@ impl IPMIClient {
                     .map_err(|e| IPMIClientError::FailedSend(e))?;
             }
             _ => {
+                let x: Vec<u8> = request_packet.into();
                 self.client_socket
-                    .send(&request_packet.to_bytes())
+                    .send(&x)
                     .map_err(|e| IPMIClientError::FailedSend(e))?;
             }
         }
@@ -501,7 +497,7 @@ impl IPMIClient {
     }
 
     fn handle_channel_auth_capabilities(&mut self, payload: IpmiPayloadResponse) -> Result<()> {
-        let response = GetChannelAuthCapabilitiesResponse::from(payload.data);
+        let response = GetChannelAuthCapabilitiesResponse::from(payload.data.unwrap());
         // Currently don't support IPMI v1.5
         if let AuthVersion::IpmiV1_5 = response.auth_version {
             return Err(IPMIClientError::UnsupportedVersion);
@@ -515,7 +511,7 @@ impl IPMIClient {
         payload: IpmiPayloadResponse,
         cipher_list_index: u8,
     ) -> Result<()> {
-        let response = GetChannelCipherSuitesResponse::from(payload.data);
+        let response = GetChannelCipherSuitesResponse::from(payload.data.unwrap());
         // update total cipher bytes for the ipmi client object
         if let Some(mut old_bytes) = self.cipher_suite_bytes.clone() {
             response

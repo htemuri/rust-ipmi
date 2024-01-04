@@ -1,6 +1,6 @@
 use bitvec::prelude::*;
 
-use crate::err::RMCPError;
+use crate::err::RMCPHeaderError;
 
 use bitvec::{field::BitField, prelude::Msb0, slice::BitSlice};
 
@@ -14,11 +14,11 @@ pub struct RmcpHeader {
 }
 
 impl TryFrom<&[u8]> for RmcpHeader {
-    type Error = RMCPError;
+    type Error = RMCPHeaderError;
 
-    fn try_from(value: &[u8]) -> Result<Self, RMCPError> {
+    fn try_from(value: &[u8]) -> Result<Self, RMCPHeaderError> {
         if value.len() != 4 {
-            Err(RMCPError::WrongLength)?
+            Err(RMCPHeaderError::WrongLength)?
         }
 
         let third_byte_slice = BitSlice::<u8, Msb0>::from_element(&value[3]);
@@ -80,14 +80,14 @@ pub enum MessageClass {
 }
 
 impl TryFrom<u8> for MessageClass {
-    type Error = RMCPError;
+    type Error = RMCPHeaderError;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         match value {
             0x6 => Ok(MessageClass::ASF),
             0x7 => Ok(MessageClass::IPMI),
             0x8 => Ok(MessageClass::OEM),
-            _ => Err(RMCPError::UnsupportedMessageClass(value)),
+            _ => Err(RMCPHeaderError::UnsupportedMessageClass(value)),
         }
     }
 }
