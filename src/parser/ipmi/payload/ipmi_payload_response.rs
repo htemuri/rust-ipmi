@@ -89,14 +89,6 @@ impl IpmiPayloadResponse {
             None => 8,
         }
     }
-
-    // returns the payload as an object and the length of the payload
-    // pub fn from_slice(slice: &[u8]) -> IpmiPayloadResponse {
-    //     let h = IpmiPayloadResponseSlice::from_slice(slice).unwrap();
-    //     // println!("{:x?}", h.to_header());
-    //     // Ok(h.to_header())
-    //     h.to_header()
-    // }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]

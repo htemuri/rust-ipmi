@@ -161,67 +161,6 @@ impl IpmiPayloadRequest {
             None => 7,
         }
     }
-
-    // returns the payload as an object and the length of the payload
-    // pub fn from_slice(slice: &[u8]) -> IpmiPayloadRequest {
-    //     let h = IpmiPayloadRequestSlice::from_slice(slice).unwrap();
-    //     // println!("{:x?}", h.to_header());
-    //     // Ok(h.to_header())
-    //     h.to_header()
-    // }
-
-    // pub fn to_bytes(&self) -> Vec<u8> {
-    //     let mut result: Vec<u8> = vec![];
-    //     let rs_addr = join_two_bits_to_byte(
-    //         self.rs_addr_type.into(),
-    //         {
-    //             match &self.rs_slave_address_type {
-    //                 Some(a) => a.clone().into(),
-    //                 None => match &self.rs_software_type {
-    //                     Some(a) => a.clone().into(),
-    //                     _ => 0x00,
-    //                 },
-    //             }
-    //         },
-    //         1,
-    //     );
-    //     let net_fn_rs_lun = join_two_bits_to_byte(
-    //         self.net_fn.to_u8(CommandType::Request),
-    //         self.rs_lun.into(),
-    //         6,
-    //     );
-    //     let checksum1 = get8bit_checksum(&[rs_addr, net_fn_rs_lun]);
-    //     let rq_addr = join_two_bits_to_byte(
-    //         self.rq_addr_type.into(),
-    //         {
-    //             match &self.rq_slave_address_type {
-    //                 Some(a) => a.clone().into(),
-    //                 None => match &self.rq_software_type {
-    //                     Some(a) => a.clone().into(),
-    //                     _ => 0x00,
-    //                 },
-    //             }
-    //         },
-    //         2,
-    //     );
-    //     let rq_seq_rq_lun = join_two_bits_to_byte(self.rq_sequence, self.rs_lun.into(), 6);
-    //     let command_code = self.command.to_u8();
-    //     // let data = self.data.as_slice();
-    //     result.push(rs_addr);
-    //     result.push(net_fn_rs_lun);
-    //     result.push(checksum1);
-    //     result.push(rq_addr);
-    //     result.push(rq_seq_rq_lun);
-    //     result.push(command_code);
-    //     if let Some(data) = &self.data {
-    //         for &byte in data.iter() {
-    //             result.push(byte);
-    //         }
-    //     }
-    //     // println!("bytes: {:x?}", &result);
-    //     result.push(get8bit_checksum(&result[3..]));
-    //     result
-    // }
 }
 
 impl Default for IpmiPayloadRequest {

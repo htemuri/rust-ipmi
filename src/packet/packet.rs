@@ -197,7 +197,7 @@ pub enum Payload {
 impl Into<Vec<u8>> for Payload {
     fn into(self) -> Vec<u8> {
         match self {
-            Payload::Ipmi(payload) => payload.to_bytes(),
+            Payload::Ipmi(payload) => payload.into(),
             Payload::RMCP(payload) => payload.to_bytes(),
             Payload::RAKP(payload) => payload.to_bytes(),
         }
