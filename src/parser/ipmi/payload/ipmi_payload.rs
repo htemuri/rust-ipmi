@@ -38,7 +38,7 @@ impl Into<Vec<u8>> for IpmiPayload {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum NetFn {
     Chassis,
     Bridge,
@@ -63,7 +63,7 @@ impl TryFrom<u8> for NetFn {
             0x0A..=0x0B => Ok(NetFn::Storage),
             0x0C..=0x0D => Ok(NetFn::Transport),
             0x0E..=0x2B => Ok(NetFn::Reserved),
-            _ => Err(NetFnError::UnknownNetFn(value)),
+            _ => Ok(NetFn::Unknown(value)), // _ => Err(NetFnError::UnknownNetFn(value)),
         }
     }
 }

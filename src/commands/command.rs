@@ -2,6 +2,7 @@ use crate::{err::CommandError, NetFn};
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum Command {
+    Unknown(u8),
     /// APP Commands
     Reserved,
     // GetDeviceId,
@@ -81,7 +82,7 @@ impl TryFrom<CommandAndNetfn> for Command {
                 0x38 => Ok(Command::GetChannelAuthCapabilities),
                 0x54 => Ok(Command::GetChannelCipherSuites),
                 0x3b => Ok(Command::SetSessionPrivilegeLevel),
-                _ => Err(CommandError::UnknownCommandCode(command_code))?,
+                _ => Ok(Command::Unknown(command_code)), // _ => Err(CommandError::UnknownCommandCode(command_code))?,
             },
             _ => Ok(Command::Reserved),
         }
@@ -95,6 +96,7 @@ impl Into<u8> for Command {
             Command::GetChannelCipherSuites => 0x54,
             Command::SetSessionPrivilegeLevel => 0x3b,
             Command::Reserved => 0x00,
+            Command::Unknown(x) => x,
         }
     }
 }
@@ -106,6 +108,7 @@ impl Into<CommandAndNetfn> for Command {
             Command::GetChannelCipherSuites => (0x54, NetFn::App),
             Command::SetSessionPrivilegeLevel => (0x3b, NetFn::App),
             Command::Reserved => (0x00, NetFn::Unknown(0)),
+            Command::Unknown(x) => (x, NetFn::Unknown(0)),
         }
     }
 }

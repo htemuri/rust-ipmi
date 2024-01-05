@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crate::{
     err::PacketError,
     helpers::utils::{aes_128_cbc_decrypt, aes_128_cbc_encrypt, generate_iv, hash_hmac_sha_256},
