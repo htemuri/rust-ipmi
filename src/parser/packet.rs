@@ -1,12 +1,10 @@
 use crate::{
     err::PacketError,
     helpers::utils::{aes_128_cbc_decrypt, aes_128_cbc_encrypt, generate_iv, hash_hmac_sha_256},
-    ipmi::rmcp_payloads::{
-        rakp::{RAKPMessage2, RAKPMessage4, RAKP},
-        rmcp_open_session::{RMCPPlusOpenSession, RMCPPlusOpenSessionResponse},
-    },
     parser::{ipmi_payload::IpmiPayload, IpmiHeader, IpmiV1Header, PayloadType, RmcpHeader},
 };
+
+use super::{rakp::RAKP, rmcp_open_session::RMCPPlusOpenSession};
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Packet {
@@ -42,14 +40,17 @@ impl TryFrom<&[u8]> for Packet {
                         PayloadType::RcmpOpenSessionRequest => todo!(),
                         PayloadType::RcmpOpenSessionResponse => {
                             Some(Payload::RMCP(RMCPPlusOpenSession::Response(
-                                RMCPPlusOpenSessionResponse::from_slice(payload_vec.as_slice()),
+                                // RMCPPlusOpenSessionResponse::from_slice(
+                                payload_vec.as_slice().try_into()?, // ),
                             )))
                         }
                         PayloadType::RAKP2 => Some(Payload::RAKP(RAKP::Message2(
-                            RAKPMessage2::from_slice(payload_vec.as_slice()),
+                            // RAKPMessage2::from_slice(
+                            payload_vec.as_slice().try_into()?, // ),
                         ))),
                         PayloadType::RAKP4 => Some(Payload::RAKP(RAKP::Message4(
-                            RAKPMessage4::from_slice(payload_vec.as_slice()),
+                            // RAKPMessage4::from_slice(
+                            payload_vec.as_slice().try_into()?, // ),
                         ))),
                         _ => todo!(),
                     },
@@ -101,14 +102,17 @@ impl TryFrom<(&[u8], &[u8; 32])> for Packet {
                         PayloadType::RcmpOpenSessionRequest => todo!(),
                         PayloadType::RcmpOpenSessionResponse => {
                             Some(Payload::RMCP(RMCPPlusOpenSession::Response(
-                                RMCPPlusOpenSessionResponse::from_slice(payload_vec.as_slice()),
+                                // RMCPPlusOpenSessionResponse::from_slice(
+                                payload_vec.as_slice().try_into()?, // ),
                             )))
                         }
                         PayloadType::RAKP2 => Some(Payload::RAKP(RAKP::Message2(
-                            RAKPMessage2::from_slice(payload_vec.as_slice()),
+                            // RAKPMessage2::from_slice(
+                            payload_vec.as_slice().try_into()?, // ),
                         ))),
                         PayloadType::RAKP4 => Some(Payload::RAKP(RAKP::Message4(
-                            RAKPMessage4::from_slice(payload_vec.as_slice()),
+                            // RAKPMessage4::from_slice(
+                            payload_vec.as_slice().try_into()?, // ),
                         ))),
                         _ => todo!(),
                     },
@@ -198,8 +202,8 @@ impl Into<Vec<u8>> for Payload {
     fn into(self) -> Vec<u8> {
         match self {
             Payload::Ipmi(payload) => payload.into(),
-            Payload::RMCP(payload) => payload.to_bytes(),
-            Payload::RAKP(payload) => payload.to_bytes(),
+            Payload::RMCP(payload) => payload.into(),
+            Payload::RAKP(payload) => payload.into(),
         }
     }
 }

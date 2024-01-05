@@ -5,31 +5,27 @@ use std::{
 };
 
 use crate::{
-    err::IPMIClientError,
+    err::{IPMIClientError, PacketError},
     helpers::utils::{append_u128_to_vec, append_u32_to_vec, hash_hmac_sha_256},
-    ipmi::{
-        data::{
-            app::{
-                channel::{
-                    AuthVersion, GetChannelAuthCapabilitiesRequest,
-                    GetChannelAuthCapabilitiesResponse, Privilege,
-                },
-                cipher::{GetChannelCipherSuitesRequest, GetChannelCipherSuitesResponse},
+    ipmi::data::{
+        app::{
+            channel::{
+                AuthVersion, GetChannelAuthCapabilitiesRequest, GetChannelAuthCapabilitiesResponse,
+                Privilege,
             },
-            commands::Command,
+            cipher::{GetChannelCipherSuitesRequest, GetChannelCipherSuitesResponse},
         },
-        rmcp_payloads::{
-            rakp::{RAKPMessage1, RAKPMessage2, RAKPMessage3, RAKP},
-            rmcp_open_session::{
-                AuthAlgorithm, ConfidentialityAlgorithm, IntegrityAlgorithm, RMCPPlusOpenSession,
-                RMCPPlusOpenSessionRequest, StatusCode,
-            },
-        },
+        commands::Command,
     },
     parser::{
         ipmi_payload::{IpmiPayload, NetFn},
         ipmi_payload_response::{CompletionCode, IpmiPayloadResponse},
         ipmi_raw_request::IpmiPayloadRawRequest,
+        rakp::{RAKPMessage1, RAKPMessage2, RAKPMessage3, RAKP},
+        rmcp_open_session::{
+            AuthAlgorithm, ConfidentialityAlgorithm, IntegrityAlgorithm, RMCPPlusOpenSession,
+            RMCPPlusOpenSessionRequest, StatusCode,
+        },
         AuthType, Packet, Payload, PayloadType,
     },
 };
@@ -206,8 +202,9 @@ impl IPMIClient {
     }
 
     fn discovery_request(&mut self) -> Result<()> {
-        let channel_packet = GetChannelAuthCapabilitiesRequest::new(true, Privilege::Administrator)
-            .create_packet(AuthType::None, 0x0, 0x0, None);
+        let channel_packet =
+            GetChannelAuthCapabilitiesRequest::new(true, 0xE, Privilege::Administrator)
+                .create_packet(AuthType::None, 0x0, 0x0, None);
         self.send_packet(channel_packet)?;
 
         // Get the Channel Cipher Suites
@@ -218,7 +215,7 @@ impl IPMIClient {
 
     fn authenticate(&mut self) -> Result<()> {
         // RMCP+ Open Session Request
-        let rmcp_open_packet = RMCPPlusOpenSessionRequest::new(
+        let rmcp_open_packet: Packet = RMCPPlusOpenSessionRequest::new(
             0,
             Privilege::Administrator,
             0xa0a2a3a4,
@@ -226,11 +223,11 @@ impl IPMIClient {
             self.integrity_algorithm.clone().unwrap(),
             self.confidentiality_algorithm.clone().unwrap(),
         )
-        .create_packet();
+        .into();
         self.send_packet(rmcp_open_packet)?;
 
         // RAKP Message 1
-        let rakp1_packet = RAKPMessage1::new(
+        let rakp1_packet: Packet = RAKPMessage1::new(
             0x0,
             self.managed_system_session_id.unwrap(),
             self.remote_console_random_number,
@@ -238,7 +235,7 @@ impl IPMIClient {
             Privilege::Administrator,
             self.username.clone().unwrap(),
         )
-        .create_packet();
+        .into();
         self.send_packet(rakp1_packet)?;
         self.create_session_keys()?;
 
@@ -263,13 +260,13 @@ impl IPMIClient {
 
         let rakp3_auth_code =
             hash_hmac_sha_256(self.password_mac_key.clone().unwrap(), rakp3_input_buffer);
-        let rakp3_packet = RAKPMessage3::new(
+        let rakp3_packet: Packet = RAKPMessage3::new(
             0x0,
             StatusCode::NoErrors,
             self.managed_system_session_id.clone().unwrap(),
             Some(rakp3_auth_code.into()),
         )
-        .create_packet();
+        .into();
         self.send_packet(rakp3_packet)?;
 
         Ok(())
@@ -454,6 +451,9 @@ impl IPMIClient {
     }
 
     fn validate_rakp2(&self, response: RAKPMessage2) -> Result<()> {
+        if let None = response.clone().key_exchange_auth_code {
+            return Ok(());
+        }
         let mut rakp2_input_buffer: Vec<u8> = Vec::new();
         append_u32_to_vec(
             &mut rakp2_input_buffer,
@@ -510,7 +510,11 @@ impl IPMIClient {
         payload: IpmiPayloadResponse,
         cipher_list_index: u8,
     ) -> Result<()> {
-        let response = GetChannelCipherSuitesResponse::from(payload.data.unwrap());
+        let response: GetChannelCipherSuitesResponse = payload
+            .data
+            .unwrap()
+            .try_into()
+            .map_err(|e| PacketError::IPMIPayload(e))?;
         // update total cipher bytes for the ipmi client object
         if let Some(mut old_bytes) = self.cipher_suite_bytes.clone() {
             response

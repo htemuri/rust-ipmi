@@ -2,7 +2,7 @@ use std::{io, num::TryFromIntError};
 
 use thiserror::Error;
 
-use crate::{ipmi::rmcp_payloads::rmcp_open_session::StatusCode, NetFn};
+use crate::parser::rmcp_open_session::StatusCode;
 
 use super::{NetFnError, PacketError};
 
@@ -24,7 +24,7 @@ pub enum IPMIClientError {
     MisformedResponse,
     #[error("This library does not support IPMI v1.5")]
     UnsupportedVersion,
-
+    // #[error("Failed to parse the ")]
     #[error("Error from BMC when opening rmcp+ session: {0:?}")]
     FailedToOpenSession(StatusCode),
     #[error("Error while parsing response packet")]

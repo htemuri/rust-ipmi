@@ -4,6 +4,7 @@ use std::fmt::Debug;
 use bitvec::prelude::*;
 
 use crate::{
+    err::{IpmiPayloadError, ParseError, PrivilegeError},
     ipmi::data::commands::Command,
     parser::{
         ipmi_payload::IpmiPayload, ipmi_payload_request::IpmiPayloadRequest, AuthType, IpmiHeader,
@@ -22,23 +23,24 @@ pub struct GetChannelAuthCapabilitiesRequest {
 impl GetChannelAuthCapabilitiesRequest {
     pub fn new(
         channel_version: bool,
+        channel_number: u8,
         max_privilege: Privilege,
     ) -> GetChannelAuthCapabilitiesRequest {
         GetChannelAuthCapabilitiesRequest {
             channel_version,
-            channel_number: 0xE,
+            channel_number,
             max_privilege,
         }
     }
 
-    pub fn from_slice(_slice: &[u8]) -> GetChannelAuthCapabilitiesRequest {
-        // todo: add error checking
-        GetChannelAuthCapabilitiesRequest {
-            channel_version: true,
-            channel_number: 0x01,
-            max_privilege: Privilege::User,
-        }
-    }
+    // pub fn from_slice(_slice: &[u8]) -> GetChannelAuthCapabilitiesRequest {
+    //     // todo: add error checking
+    //     GetChannelAuthCapabilitiesRequest {
+    //         channel_version: true,
+    //         channel_number: 0x01,
+    //         max_privilege: Privilege::User,
+    //     }
+    // }
 
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut result = Vec::new();
@@ -50,7 +52,7 @@ impl GetChannelAuthCapabilitiesRequest {
             let channel_number = bv[..].load::<u8>();
             channel_number
         });
-        result.push(self.max_privilege.to_u8());
+        result.push(self.max_privilege.clone().into());
         result
     }
 
@@ -176,12 +178,12 @@ pub enum KG {
     NonZero,
 }
 impl KG {
-    pub fn to_bool(&self) -> bool {
-        match self {
-            KG::Defualt => false,
-            KG::NonZero => true,
-        }
-    }
+    // pub fn to_bool(&self) -> bool {
+    //     match self {
+    //         KG::Defualt => false,
+    //         KG::NonZero => true,
+    //     }
+    // }
     pub fn from_bool(flag: bool) -> KG {
         match flag {
             false => KG::Defualt,
@@ -217,13 +219,13 @@ impl AnonLogin {
         }
     }
 
-    pub fn to_bits(&self) -> [bool; 3] {
-        return [
-            self.non_null_username.to_bool(),
-            self.null_username.to_bool(),
-            self.anonymous_login.to_bool(),
-        ];
-    }
+    // pub fn to_bits(&self) -> [bool; 3] {
+    //     return [
+    //         self.non_null_username.to_bool(),
+    //         self.null_username.to_bool(),
+    //         self.anonymous_login.to_bool(),
+    //     ];
+    // }
 }
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 
@@ -233,12 +235,12 @@ pub enum AnonStatus {
 }
 
 impl AnonStatus {
-    pub fn to_bool(&self) -> bool {
-        match self {
-            AnonStatus::Enabled => true,
-            AnonStatus::Disabled => false,
-        }
-    }
+    // pub fn to_bool(&self) -> bool {
+    //     match self {
+    //         AnonStatus::Enabled => true,
+    //         AnonStatus::Disabled => false,
+    //     }
+    // }
     pub fn from_bool(flag: bool) -> AnonStatus {
         match flag {
             true => AnonStatus::Enabled,
@@ -254,12 +256,12 @@ pub enum AuthVersion {
 }
 
 impl AuthVersion {
-    pub fn to_bool(&self) -> bool {
-        match self {
-            AuthVersion::IpmiV1_5 => false,
-            AuthVersion::IpmiV2 => true,
-        }
-    }
+    // pub fn to_bool(&self) -> bool {
+    //     match self {
+    //         AuthVersion::IpmiV1_5 => false,
+    //         AuthVersion::IpmiV2 => true,
+    //     }
+    // }
 
     pub fn from_bool(val: bool) -> AuthVersion {
         match val {
@@ -277,23 +279,29 @@ pub enum Privilege {
     Operator,
     Administrator,
     Oem,
-    Unknown(u8),
+    // Unknown(u8),
 }
 
-impl Privilege {
-    pub fn from_u8(privilege: u8) -> Privilege {
-        match privilege {
-            0x00 => Privilege::Reserved,
-            0x01 => Privilege::Callback,
-            0x02 => Privilege::User,
-            0x03 => Privilege::Operator,
-            0x04 => Privilege::Administrator,
-            0x05 => Privilege::Oem,
-            _ => Privilege::Unknown(privilege),
+impl TryFrom<u8> for Privilege {
+    type Error = IpmiPayloadError;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0x00 => Ok(Privilege::Reserved),
+            0x01 => Ok(Privilege::Callback),
+            0x02 => Ok(Privilege::User),
+            0x03 => Ok(Privilege::Operator),
+            0x04 => Ok(Privilege::Administrator),
+            0x05 => Ok(Privilege::Oem),
+            _ => Err(ParseError::Privilege(PrivilegeError::UnknownPrivilege(
+                value,
+            )))?,
         }
     }
+}
 
-    pub fn to_u8(&self) -> u8 {
+impl Into<u8> for Privilege {
+    fn into(self) -> u8 {
         match self {
             Privilege::Reserved => 0x00,
             Privilege::Callback => 0x01,
@@ -301,7 +309,32 @@ impl Privilege {
             Privilege::Operator => 0x03,
             Privilege::Administrator => 0x04,
             Privilege::Oem => 0x05,
-            Privilege::Unknown(privilege) => *privilege,
         }
     }
 }
+
+// impl Privilege {
+//     // pub fn from_u8(privilege: u8) -> Privilege {
+//     //     match privilege {
+//     //         0x00 => Privilege::Reserved,
+//     //         0x01 => Privilege::Callback,
+//     //         0x02 => Privilege::User,
+//     //         0x03 => Privilege::Operator,
+//     //         0x04 => Privilege::Administrator,
+//     //         0x05 => Privilege::Oem,
+//     //         _ => Privilege::Unknown(privilege),
+//     //     }
+//     // }
+
+//     // pub fn to_u8(&self) -> u8 {
+//     //     match self {
+//     //         Privilege::Reserved => 0x00,
+//     //         Privilege::Callback => 0x01,
+//     //         Privilege::User => 0x02,
+//     //         Privilege::Operator => 0x03,
+//     //         Privilege::Administrator => 0x04,
+//     //         Privilege::Oem => 0x05,
+//     //         Privilege::Unknown(privilege) => *privilege,
+//     //     }
+//     // }
+// }

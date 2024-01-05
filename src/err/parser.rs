@@ -1,6 +1,9 @@
 use thiserror::Error;
 
-use super::{CommandError, LunError, NetFnError};
+use super::{
+    AuthAlgorithmError, CommandError, ConfidentialityAlgorithmError, IntegrityAlgorithmError,
+    LunError, NetFnError, PrivilegeError,
+};
 
 #[derive(Error, Debug)]
 pub enum ParseError {
@@ -10,6 +13,16 @@ pub enum ParseError {
     FailedToParse,
     #[error("Unsupported Message class {0}")]
     UnsupportedMessageClass(u8),
+    #[error("Failed parsing IPMI payload {0:?}")]
+    NetFn(#[from] NetFnError),
+    #[error("Failed parsing IPMI payload {0:?}")]
+    Lun(#[from] LunError),
+    #[error("Failed parsing IPMI payload {0:?}")]
+    Command(#[from] CommandError),
+    #[error("Failed parsing IPMI payload {0:?}")]
+    Privilege(#[from] PrivilegeError),
+    #[error("Failed parsing IPMI payload {0:?}")]
+    AuthAlgorithm(#[from] AuthAlgorithmError),
 }
 
 #[derive(Error, Debug)]
@@ -30,14 +43,24 @@ pub enum IpmiPayloadError {
     WrongLength,
     #[error("Failed parsing IPMI request payload {0:?}")]
     PayloadRequestError(#[from] IpmiPayloadRequestError),
+    #[error("Unsupported Auth Type {0}")]
+    UnsupportedAuthType(u8),
     #[error("Failed parsing IPMI payload {0:?}")]
     NetFn(#[from] NetFnError),
     #[error("Failed parsing IPMI payload {0:?}")]
     Lun(#[from] LunError),
     #[error("Failed parsing IPMI payload {0:?}")]
     Command(#[from] CommandError),
-    #[error("Unsupported Auth Type {0}")]
-    UnsupportedAuthType(u8),
+    #[error("Failed parsing IPMI payload {0:?}")]
+    Privilege(#[from] PrivilegeError),
+    #[error("Failed parsing payload")]
+    Parse(#[from] ParseError),
+    #[error("Failed parsing IPMI payload {0:?}")]
+    AuthAlgorithm(#[from] AuthAlgorithmError),
+    #[error("Failed parsing IPMI payload {0:?}")]
+    IntegrityAlgorithm(#[from] IntegrityAlgorithmError),
+    #[error("Failed parsing IPMI payload {0:?}")]
+    ConfidentialityAlgorithm(#[from] ConfidentialityAlgorithmError),
 }
 
 #[derive(Error, Debug)]
@@ -60,4 +83,6 @@ pub enum IpmiPayloadRequestError {
     WrongLength,
     #[error("Unsupported Payload Type {0}")]
     UnsupportedPayloadType(u8),
+    #[error("Failed parsing payload")]
+    Parse(#[from] ParseError),
 }

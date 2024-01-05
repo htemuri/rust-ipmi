@@ -68,15 +68,22 @@ pub enum Command {
     // FirmwareFirewallConfiguration,
 }
 
-impl TryFrom<(u8, NetFn)> for Command {
+type CommandAndNetfn = (u8, NetFn);
+
+impl TryFrom<CommandAndNetfn> for Command {
     type Error = CommandError;
 
-    fn try_from(value: (u8, NetFn)) -> Result<Self, CommandError> {
-        let command = Self::from_u8_and_netfn(value.0, value.1);
-        if let Command::Reserved = command {
-            Err(CommandError::UnknownCommandCode(value.0))
-        } else {
-            Ok(command)
+    fn try_from(value: CommandAndNetfn) -> Result<Self, CommandError> {
+        let command_code = value.0;
+        let netfn = value.1;
+        match netfn {
+            NetFn::App => match command_code {
+                0x38 => Ok(Command::GetChannelAuthCapabilities),
+                0x54 => Ok(Command::GetChannelCipherSuites),
+                0x3b => Ok(Command::SetSessionPrivilegeLevel),
+                _ => Err(CommandError::UnknownCommandCode(command_code))?,
+            },
+            _ => Ok(Command::Reserved),
         }
     }
 }
@@ -92,25 +99,13 @@ impl Into<u8> for Command {
     }
 }
 
-impl Command {
-    pub fn to_u8(&self) -> u8 {
+impl Into<CommandAndNetfn> for Command {
+    fn into(self) -> CommandAndNetfn {
         match self {
-            Command::GetChannelAuthCapabilities => 0x38,
-            Command::GetChannelCipherSuites => 0x54,
-            Command::SetSessionPrivilegeLevel => 0x3b,
-            Command::Reserved => 0x00,
-        }
-    }
-
-    pub fn from_u8_and_netfn(command_code: u8, net_fn: NetFn) -> Command {
-        match net_fn {
-            NetFn::App => match command_code {
-                0x38 => Command::GetChannelAuthCapabilities,
-                0x54 => Command::GetChannelCipherSuites,
-                0x3b => Command::SetSessionPrivilegeLevel,
-                _ => Command::Reserved,
-            },
-            _ => Command::Reserved,
+            Command::GetChannelAuthCapabilities => (0x38, NetFn::App),
+            Command::GetChannelCipherSuites => (0x54, NetFn::App),
+            Command::SetSessionPrivilegeLevel => (0x3b, NetFn::App),
+            Command::Reserved => (0x00, NetFn::Unknown(0)),
         }
     }
 }

@@ -1,3 +1,4 @@
+use crate::err::IpmiPayloadError;
 use crate::helpers::utils::join_two_bits_to_byte;
 use crate::ipmi::data::commands::Command;
 use crate::parser::ipmi_payload::IpmiPayload;
@@ -97,35 +98,42 @@ pub struct GetChannelCipherSuitesResponse {
     pub cypher_suite_record_data_bytes: Vec<u8>,
 }
 
-impl From<&[u8]> for GetChannelCipherSuitesResponse {
-    fn from(value: &[u8]) -> Self {
-        GetChannelCipherSuitesResponse::from_slice(value)
+impl TryFrom<&[u8]> for GetChannelCipherSuitesResponse {
+    type Error = IpmiPayloadError;
+
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+        if value.len() < 2 {
+            Err(IpmiPayloadError::WrongLength)?
+        }
+        Ok(GetChannelCipherSuitesResponse {
+            channel_number: value[0],
+            cypher_suite_record_data_bytes: value[1..].to_vec(),
+        })
     }
 }
-impl From<Vec<u8>> for GetChannelCipherSuitesResponse {
-    fn from(value: Vec<u8>) -> Self {
-        GetChannelCipherSuitesResponse::from_slice(value.as_slice())
+
+impl TryFrom<Vec<u8>> for GetChannelCipherSuitesResponse {
+    type Error = IpmiPayloadError;
+
+    fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+        value.as_slice().try_into()
     }
 }
 
 impl GetChannelCipherSuitesResponse {
-    fn from_slice(slice: &[u8]) -> GetChannelCipherSuitesResponse {
-        GetChannelCipherSuitesResponse {
-            channel_number: slice[0],
-            cypher_suite_record_data_bytes: {
-                let mut vec = Vec::new();
-                vec.extend_from_slice(&slice[1..]);
-                vec
-            },
-        }
-    }
+    // fn from_slice(slice: &[u8]) -> GetChannelCipherSuitesResponse {
+    //     GetChannelCipherSuitesResponse {
+    //         channel_number: slice[0],
+    //         cypher_suite_record_data_bytes: {
+    //             let mut vec = Vec::new();
+    //             vec.extend_from_slice(&slice[1..]);
+    //             vec
+    //         },
+    //     }
+    // }
 
     pub fn is_last(&self) -> bool {
-        if self.cypher_suite_record_data_bytes.len() < 16 {
-            return true;
-        } else {
-            return false;
-        }
+        self.cypher_suite_record_data_bytes.len() < 16
     }
 }
 
