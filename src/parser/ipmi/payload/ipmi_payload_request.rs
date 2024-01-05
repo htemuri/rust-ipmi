@@ -2,9 +2,9 @@ use bitvec::{field::BitField, order::Msb0, slice::BitSlice};
 use std::fmt::Debug;
 
 use crate::{
+    commands::Command,
     err::{IpmiPayloadError, IpmiPayloadRequestError},
     helpers::utils::{get8bit_checksum, join_two_bits_to_byte},
-    ipmi::data::commands::Command,
 };
 
 use super::ipmi_payload::{AddrType, CommandType, Lun, NetFn, SlaveAddress, SoftwareType};

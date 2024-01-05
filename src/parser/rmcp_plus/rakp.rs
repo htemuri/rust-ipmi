@@ -1,6 +1,6 @@
 use crate::{
+    commands::Privilege,
     err::IpmiPayloadError,
-    ipmi::data::app::channel::Privilege,
     parser::{AuthType, IpmiHeader, IpmiV2Header, Packet, Payload, PayloadType},
 };
 

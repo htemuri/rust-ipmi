@@ -2,8 +2,8 @@
 use bitvec::{field::BitField, order::Msb0, slice::BitSlice};
 
 use crate::{
+    commands::Command,
     err::{IpmiPayloadError, IpmiPayloadRequestError},
-    ipmi::data::commands::Command,
 };
 
 use super::ipmi_payload::{AddrType, Lun, NetFn, SlaveAddress, SoftwareType};

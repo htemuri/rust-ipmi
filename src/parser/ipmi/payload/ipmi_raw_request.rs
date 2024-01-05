@@ -1,5 +1,5 @@
 use crate::{
-    ipmi::data::commands::Command,
+    commands::Command,
     parser::{AuthType, IpmiHeader, IpmiV2Header, Packet, Payload, PayloadType},
 };
 

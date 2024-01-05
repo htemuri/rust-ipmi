@@ -1,17 +1,33 @@
 use crate::err::IpmiPayloadError;
 use crate::helpers::utils::join_two_bits_to_byte;
-use crate::ipmi::data::commands::Command;
 use crate::parser::ipmi_payload::IpmiPayload;
 use crate::parser::ipmi_payload_request::IpmiPayloadRequest;
 use crate::parser::{AuthType, IpmiHeader, IpmiV2Header, Packet, Payload, PayloadType};
-use crate::NetFn;
+use crate::{Command, NetFn};
 use bitvec::prelude::*;
 
+#[derive(Clone)]
 pub struct GetChannelCipherSuitesRequest {
     pub channel_number: u8,
     pub payload_type: PayloadType,
     pub list_algo_cipher_suite: bool,
     pub list_index: u8,
+}
+
+impl Into<Vec<u8>> for GetChannelCipherSuitesRequest {
+    fn into(self) -> Vec<u8> {
+        let mut result = Vec::new();
+        result.push(join_two_bits_to_byte(0, self.channel_number, 4));
+        result.push(join_two_bits_to_byte(0, self.payload_type.into(), 3));
+        result.push({
+            let mut bv: BitVec<u8, Msb0> = bitvec![u8, Msb0; 0;8];
+            *bv.get_mut(0).unwrap() = self.list_algo_cipher_suite;
+            bv[2..].store::<u8>(self.list_index);
+            let list_index = bv[..].load::<u8>();
+            list_index
+        });
+        result
+    }
 }
 
 impl GetChannelCipherSuitesRequest {
@@ -29,22 +45,8 @@ impl GetChannelCipherSuitesRequest {
         }
     }
 
-    pub fn to_bytes(&self) -> Vec<u8> {
-        let mut result = Vec::new();
-        result.push(join_two_bits_to_byte(0, self.channel_number, 4));
-        result.push(join_two_bits_to_byte(0, self.payload_type.into(), 3));
-        result.push({
-            let mut bv: BitVec<u8, Msb0> = bitvec![u8, Msb0; 0;8];
-            *bv.get_mut(0).unwrap() = self.list_algo_cipher_suite;
-            bv[2..].store::<u8>(self.list_index);
-            let list_index = bv[..].load::<u8>();
-            list_index
-        });
-        result
-    }
-
     pub fn create_packet(&self) -> Packet {
-        let data_bytes = self.to_bytes();
+        let data_bytes: Vec<u8> = self.clone().into();
         // println!("{:x?}", data_bytes);
         let packet = Packet::new(
             IpmiHeader::V2_0(IpmiV2Header {
@@ -121,20 +123,7 @@ impl TryFrom<Vec<u8>> for GetChannelCipherSuitesResponse {
 }
 
 impl GetChannelCipherSuitesResponse {
-    // fn from_slice(slice: &[u8]) -> GetChannelCipherSuitesResponse {
-    //     GetChannelCipherSuitesResponse {
-    //         channel_number: slice[0],
-    //         cypher_suite_record_data_bytes: {
-    //             let mut vec = Vec::new();
-    //             vec.extend_from_slice(&slice[1..]);
-    //             vec
-    //         },
-    //     }
-    // }
-
     pub fn is_last(&self) -> bool {
         self.cypher_suite_record_data_bytes.len() < 16
     }
 }
-
-//

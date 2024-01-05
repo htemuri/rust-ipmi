@@ -5,18 +5,13 @@ use std::{
 };
 
 use crate::{
+    commands::{
+        AuthVersion, Command, GetChannelAuthCapabilitiesRequest,
+        GetChannelAuthCapabilitiesResponse, GetChannelCipherSuitesRequest,
+        GetChannelCipherSuitesResponse, Privilege,
+    },
     err::{IPMIClientError, PacketError},
     helpers::utils::{append_u128_to_vec, append_u32_to_vec, hash_hmac_sha_256},
-    ipmi::data::{
-        app::{
-            channel::{
-                AuthVersion, GetChannelAuthCapabilitiesRequest, GetChannelAuthCapabilitiesResponse,
-                Privilege,
-            },
-            cipher::{GetChannelCipherSuitesRequest, GetChannelCipherSuitesResponse},
-        },
-        commands::Command,
-    },
     parser::{
         ipmi_payload::{IpmiPayload, NetFn},
         ipmi_payload_response::{CompletionCode, IpmiPayloadResponse},
@@ -496,7 +491,11 @@ impl IPMIClient {
     }
 
     fn handle_channel_auth_capabilities(&mut self, payload: IpmiPayloadResponse) -> Result<()> {
-        let response = GetChannelAuthCapabilitiesResponse::from(payload.data.unwrap());
+        let response: GetChannelAuthCapabilitiesResponse = payload
+            .data
+            .unwrap()
+            .try_into()
+            .map_err(|e| PacketError::IPMIPayload(e))?;
         // Currently don't support IPMI v1.5
         if let AuthVersion::IpmiV1_5 = response.auth_version {
             return Err(IPMIClientError::UnsupportedVersion);

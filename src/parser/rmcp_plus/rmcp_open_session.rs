@@ -1,9 +1,9 @@
 use crate::{
+    commands::Privilege,
     err::{
         AuthAlgorithmError, ConfidentialityAlgorithmError, IntegrityAlgorithmError,
         IpmiPayloadError,
     },
-    ipmi::data::app::channel::Privilege,
     parser::{AuthType, IpmiHeader, IpmiV2Header, Packet, Payload, PayloadType},
 };
 
