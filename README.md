@@ -26,7 +26,7 @@ This library is focusing on the IPMI LAN protocol. Some general information on I
 2. The packet structure generally looks like Ethernet frame -> IP/UDP -> RMCP header -> IPMI header -> IPMI payload
 3. Intel came out with a IPMI v2 and RMCP+ which introduced encrypted payloads
 
-## Requirements for this library
+<!-- ## Requirements for this library
 
 - Support IPMI v1.5/2 RMCP/RMCP+
-- Support most common APP and CHASSIS commands
+- Support most common APP and CHASSIS commands -->
