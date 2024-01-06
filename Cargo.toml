@@ -9,7 +9,7 @@ repository = "https://github.com/htemuri/rust-ipmi/"
 license = "GPL-3.0-or-later"
 keywords = ["ipmi", "rmcp"]
 categories = ["hardware-support", "api-bindings", "parsing"]
-exclude = ["/src/main.rs", "images/*", "docs/*", ".gitignore"]
+exclude = ["/src/main.rs", "images/*", "docs/*", ".gitignore", ".cargo/*"]
 
 [dependencies]
 bitvec = "1.0.1"
