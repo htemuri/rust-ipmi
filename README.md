@@ -2,10 +2,6 @@
 
 IPMI through LAN rust client with support for IPMI V2/RMCP+. 
 
-### Features supported:
-- [ ] 
-
-
 ###  Preface: 
 This is a hobby project to learn some rust, and is NOT a library meant for production use. If you would like a stable, well featured IPMI LAN client, look into ipmi-tool - a CLI tool which has been maintained for over a decade.
 
