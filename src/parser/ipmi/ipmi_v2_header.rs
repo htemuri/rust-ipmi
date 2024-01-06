@@ -4,7 +4,7 @@ use crate::err::{IpmiHeaderError, IpmiV2HeaderError};
 
 use super::ipmi_header::AuthType;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug)]
 pub struct IpmiV2Header {
     pub auth_type: AuthType,
     pub payload_enc: bool,
@@ -144,7 +144,7 @@ impl IpmiV2Header {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug)]
 pub enum PayloadType {
     IPMI,
     SOL,

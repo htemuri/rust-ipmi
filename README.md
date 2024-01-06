@@ -1,6 +1,9 @@
 # rust-ipmi
 
-IPMI through LAN rust client with support for IPMI V2/RMCP+.
+IPMI through LAN rust client with support for IPMI V2/RMCP+. 
+
+### Features supported:
+- [ ] 
 
 
 ###  Preface: 

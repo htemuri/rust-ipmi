@@ -6,11 +6,12 @@ use bitvec::{field::BitField, order::Msb0, slice::BitSlice};
 use crate::{
     commands::Command,
     err::{IpmiPayloadError, IpmiPayloadRequestError},
+    helpers::utils::join_two_bits_to_byte,
 };
 
 use super::ipmi_payload::{AddrType, Lun, NetFn, SlaveAddress, SoftwareType};
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone)]
 pub struct IpmiPayloadResponse {
     pub rq_addr: Address,
     pub net_fn: NetFn,
@@ -88,7 +89,7 @@ impl IpmiPayloadResponse {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug)]
 pub enum Address {
     Slave(SlaveAddress),
     Software(SoftwareType),
@@ -117,13 +118,13 @@ impl From<u8> for Address {
 impl Into<u8> for Address {
     fn into(self) -> u8 {
         match self {
-            Self::Slave(s) => s.into(),
-            Self::Software(s) => s.into(),
+            Self::Slave(s) => join_two_bits_to_byte(AddrType::SlaveAddress.into(), s.into(), 1),
+            Self::Software(s) => join_two_bits_to_byte(AddrType::SoftwareId.into(), s.into(), 1),
         }
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum CompletionCode {
     CompletedNormally,
     NodeBusy,

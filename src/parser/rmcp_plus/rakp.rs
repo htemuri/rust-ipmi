@@ -8,7 +8,7 @@ use bitvec::prelude::*;
 
 use super::rmcp_open_session::StatusCode;
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug)]
 pub enum RAKP {
     Message1(RAKPMessage1),
     Message2(RAKPMessage2),
@@ -26,7 +26,7 @@ impl Into<Vec<u8>> for RAKP {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug)]
 pub struct RAKPMessage1 {
     pub message_tag: u8,
     pub managed_system_session_id: u32,
@@ -96,7 +96,7 @@ impl RAKPMessage1 {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug)]
 pub struct RAKPMessage2 {
     pub message_tag: u8,
     pub rmcp_plus_status_code: StatusCode,
@@ -139,7 +139,7 @@ impl TryFrom<&[u8]> for RAKPMessage2 {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug)]
 pub struct RAKPMessage3 {
     pub message_tag: u8,
     pub rmcp_plus_status_code: StatusCode,
@@ -199,7 +199,7 @@ impl RAKPMessage3 {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug)]
 pub struct RAKPMessage4 {
     pub message_tag: u8,
     pub rmcp_plus_status_code: StatusCode,

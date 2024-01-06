@@ -7,7 +7,7 @@ use crate::{
     parser::{AuthType, IpmiHeader, IpmiV2Header, Packet, Payload, PayloadType},
 };
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone)]
 
 pub enum RMCPPlusOpenSession {
     Request(RMCPPlusOpenSessionRequest),
@@ -23,7 +23,7 @@ impl Into<Vec<u8>> for RMCPPlusOpenSession {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug)]
 pub struct RMCPPlusOpenSessionRequest {
     /*
         1 Message Tag - Selected by remote console. Used by remote console to help match
@@ -173,7 +173,7 @@ impl RMCPPlusOpenSessionRequest {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone)]
 pub struct RMCPPlusOpenSessionResponse {
     /*
     1 Message Tag - The BMC returns the Message Tag value that was passed by the remote
@@ -249,7 +249,7 @@ impl TryFrom<&[u8]> for RMCPPlusOpenSessionResponse {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug)]
 
 pub enum StatusCode {
     NoErrors,
@@ -328,7 +328,7 @@ impl Into<u8> for StatusCode {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug)]
 
 pub enum AuthAlgorithm {
     RakpNone,
@@ -366,7 +366,7 @@ impl Into<u8> for AuthAlgorithm {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug)]
 pub enum IntegrityAlgorithm {
     None,
     HmacSha196,
@@ -405,7 +405,7 @@ impl Into<u8> for IntegrityAlgorithm {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug)]
 pub enum ConfidentialityAlgorithm {
     None,
     AesCbc128,

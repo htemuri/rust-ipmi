@@ -2,7 +2,7 @@ use crate::err::{IpmiHeaderError, IpmiV1HeaderError};
 
 use super::ipmi_header::AuthType;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug)]
 pub struct IpmiV1Header {
     pub auth_type: AuthType,
     pub session_seq_number: u32,

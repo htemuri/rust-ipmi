@@ -7,7 +7,7 @@ use super::{
     ipmi_v2_header::{IpmiV2Header, PayloadType},
 };
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug)]
 pub enum IpmiHeader {
     V1_5(IpmiV1Header),
     V2_0(IpmiV2Header),
@@ -86,7 +86,7 @@ impl IpmiHeader {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug)]
 pub enum AuthType {
     None,
     MD2,

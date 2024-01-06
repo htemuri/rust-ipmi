@@ -12,7 +12,7 @@ use crate::{
     Command, NetFn,
 };
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Clone)]
 pub struct GetChannelAuthCapabilitiesRequest {
     pub channel_version: bool,
     pub channel_number: u8,
@@ -72,7 +72,7 @@ impl GetChannelAuthCapabilitiesRequest {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Hash)]
+#[derive(Debug)]
 pub struct GetChannelAuthCapabilitiesResponse {
     pub channel_number: u8,
     pub auth_version: AuthVersion,
@@ -136,7 +136,7 @@ impl TryFrom<Vec<u8>> for GetChannelAuthCapabilitiesResponse {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Debug)]
 
 pub enum KG {
     /*
@@ -158,7 +158,7 @@ impl From<bool> for KG {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Debug)]
 pub struct AnonLogin {
     /*
         1b = Non-null usernames enabled. (One or more users are enabled
@@ -185,7 +185,7 @@ impl AnonLogin {
         }
     }
 }
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Debug)]
 
 pub enum AnonStatus {
     Enabled,
@@ -201,7 +201,7 @@ impl From<bool> for AnonStatus {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Debug)]
 pub enum AuthVersion {
     IpmiV2,
     IpmiV1_5,
@@ -216,7 +216,7 @@ impl From<bool> for AuthVersion {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Privilege {
     Reserved,
     Callback,

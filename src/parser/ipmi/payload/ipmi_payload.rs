@@ -7,7 +7,7 @@ use crate::err::{IpmiPayloadError, LunError};
 use super::ipmi_payload_request::IpmiPayloadRequest;
 use super::ipmi_payload_response::IpmiPayloadResponse;
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone)]
 pub enum IpmiPayload {
     Request(IpmiPayloadRequest),
     Response(IpmiPayloadResponse),
@@ -40,7 +40,7 @@ impl Into<Vec<u8>> for IpmiPayload {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug)]
 pub enum NetFn {
     Chassis,
     Bridge,
@@ -145,7 +145,6 @@ impl NetFn {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum CommandType {
     Request,
     Response,
@@ -161,7 +160,7 @@ impl From<u8> for CommandType {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug)]
 pub enum Lun {
     Bmc,
     Oem1,
@@ -205,7 +204,6 @@ impl Into<u8> for Lun {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum AddrType {
     SlaveAddress,
     SoftwareId,
@@ -229,7 +227,7 @@ impl Into<u8> for AddrType {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug)]
 pub enum SoftwareType {
     Bios,
     SmiHandler,
@@ -282,7 +280,7 @@ impl Into<u8> for SoftwareType {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug)]
 pub enum SlaveAddress {
     Bmc,
     Unknown(u8),

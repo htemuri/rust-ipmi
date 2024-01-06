@@ -4,7 +4,7 @@ use crate::err::RMCPHeaderError;
 
 use bitvec::{field::BitField, prelude::Msb0, slice::BitSlice};
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug)]
 pub struct RmcpHeader {
     pub version: u8,         // 0x06 for RMCP Version 1.0
     pub reserved: u8,        // 0x00
@@ -73,7 +73,7 @@ impl Default for RmcpHeader {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug)]
 pub enum MessageClass {
     ASF,
     IPMI,

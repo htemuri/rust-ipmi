@@ -2,10 +2,10 @@ use core::fmt;
 
 use crate::{err::CommandError, NetFn};
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone)]
 pub enum Command {
     Unknown(u8),
-    /// APP Commands
+    // *APP Commands*
     // Reserved,
     // GetDeviceId,
     // ColdReset,

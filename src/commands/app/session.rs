@@ -1,6 +1,6 @@
 use crate::parser::AuthType;
 
-#[derive(Debug, Eq, PartialEq, Hash)]
+#[derive(Debug)]
 pub struct GetSessionChallengeRequest {
     pub auth_type: AuthType,
     pub username: String,

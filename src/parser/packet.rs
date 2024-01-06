@@ -6,7 +6,7 @@ use crate::{
 
 use super::{rakp::RAKP, rmcp_open_session::RMCPPlusOpenSession};
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone)]
 pub struct Packet {
     pub rmcp_header: RmcpHeader,
     pub ipmi_header: IpmiHeader,
@@ -172,7 +172,7 @@ impl Packet {
             // hmac sha256-128 using k1 as key and auth_code input as input buffer
             let auth_code = &hash_hmac_sha_256(k1.into(), auth_code_input.clone()); // choose first 128 bits for sha256_128
 
-            encrypted_packet.append(&mut self.rmcp_header.into());
+            encrypted_packet.append(&mut self.rmcp_header.clone().into());
             encrypted_packet.append(&mut auth_code_input);
             encrypted_packet.extend(&auth_code[..16]);
             Some(encrypted_packet)
@@ -191,7 +191,7 @@ impl Default for Packet {
         }
     }
 }
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone)]
 pub enum Payload {
     Ipmi(IpmiPayload),
     RMCP(RMCPPlusOpenSession),

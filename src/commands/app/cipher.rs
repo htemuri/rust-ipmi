@@ -81,7 +81,7 @@ impl Default for GetChannelCipherSuitesRequest {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug)]
 pub struct GetChannelCipherSuitesResponse {
     /*
     2 bytes Channel Number

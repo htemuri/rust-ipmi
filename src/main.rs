@@ -1,13 +1,17 @@
-use rust_ipmi::{IPMIClient, IPMIClientError};
+use rust_ipmi::{IPMIClient, NetFn};
 
 fn main() {
-    let mut client = IPMIClient::new("192.168.88.10:623").expect("Failed to create ipmi client");
-    let _ = client
+    let mut client: IPMIClient =
+        IPMIClient::new("192.168.88.10:623").expect("Failed to create ipmi client");
+
+    client
         .establish_connection("root", "")
-        .map_err(|e| println!("{}", e.to_string()));
-    let res = client
-        .send_raw_request(0x30, 0x30, Some(vec![0x02, 0xff, 0x10]))
-        .map_err(|e: IPMIClientError| println!("{}", e));
-    let payload = res.unwrap();
-    println!("{}", payload)
+        .expect("Failed to establish the session with the BMC");
+
+    let response = client.send_raw_request(NetFn::App, 0x3b, Some(vec![0x04]));
+
+    match response {
+        Err(err) => println!("Failed to send the raw request; err = {:?}", err),
+        Ok(n) => println!("{}", n), // print the response
+    }
 }
