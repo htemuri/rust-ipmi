@@ -1,6 +1,6 @@
 [package]
 name = "rust-ipmi"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Harris Temuri <harris.temuri@gmail.com>"]
 edition = "2021"
 description = "IPMI client library for rust"
