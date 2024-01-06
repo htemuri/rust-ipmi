@@ -1,6 +1,7 @@
 # rust-ipmi
-![Crates.io Version](https://img.shields.io/crates/v/rust-ipmi?style=flat&link=https%3A%2F%2Fcrates.io%2Fcrates%2Frust-ipmi)
-![docs.rs](https://img.shields.io/docsrs/rust-ipmi?style=flat&label=docs&link=https%3A%2F%2Fdocs.rs%2Frust-ipmi%2Flatest%2Frust_ipmi%2F)
+<!-- ![Crates.io Version](https://img.shields.io/crates/v/rust-ipmi?style=flat) -->
+<a href="https://crates.io/crates/rust-ipmi"><img alt="Crates.io Version" src="https://img.shields.io/crates/v/rust-ipmi"></a>
+<a href="https://docs.rs/rust-ipmi/latest/rust_ipmi/"><img alt="docs.rs" src="https://img.shields.io/docsrs/rust-ipmi"></a>
 
 [Website](https://crates.io/crates/rust-ipmi) | [API Docs](https://docs.rs/rust-ipmi/latest/rust_ipmi/)
 
