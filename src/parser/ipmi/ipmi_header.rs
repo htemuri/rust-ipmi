@@ -13,10 +13,10 @@ pub enum IpmiHeader {
     V2_0(IpmiV2Header),
 }
 
-pub enum Version {
-    V1_5,
-    V2_0,
-}
+// pub enum Version {
+//     V1_5,
+//     V2_0,
+// }
 
 impl TryFrom<&[u8]> for IpmiHeader {
     type Error = IpmiHeaderError;
@@ -45,14 +45,12 @@ impl Into<Vec<u8>> for IpmiHeader {
 }
 
 impl IpmiHeader {
-    pub const MAX_LEN: usize = 26;
-
-    pub fn version_from_auth_type(auth_type: AuthType) -> Version {
-        match auth_type {
-            AuthType::RmcpPlus => Version::V2_0,
-            _ => Version::V1_5,
-        }
-    }
+    // pub fn version_from_auth_type(auth_type: AuthType) -> Version {
+    //     match auth_type {
+    //         AuthType::RmcpPlus => Version::V2_0,
+    //         _ => Version::V1_5,
+    //     }
+    // }
 
     pub fn payload_type(&self) -> PayloadType {
         match self {

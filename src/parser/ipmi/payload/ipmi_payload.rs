@@ -1,6 +1,8 @@
+use core::fmt;
+
 use bitvec::{field::BitField, order::Msb0, slice::BitSlice};
 
-use crate::err::{IpmiPayloadError, LunError, NetFnError};
+use crate::err::{IpmiPayloadError, LunError};
 
 use super::ipmi_payload_request::IpmiPayloadRequest;
 use super::ipmi_payload_response::IpmiPayloadResponse;
@@ -51,19 +53,51 @@ pub enum NetFn {
     Unknown(u8),
 }
 
-impl TryFrom<u8> for NetFn {
-    type Error = NetFnError;
-    fn try_from(value: u8) -> Result<Self, NetFnError> {
+impl fmt::Display for NetFn {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            NetFn::Chassis => write!(f, "Chassis"),
+            NetFn::Bridge => write!(f, "Bridge"),
+            NetFn::SensorEvent => write!(f, "Sensor Event"),
+            NetFn::App => write!(f, "App"),
+            NetFn::Firmware => write!(f, "Firmware"),
+            NetFn::Storage => write!(f, "Storage"),
+            NetFn::Transport => write!(f, "Transport"),
+            NetFn::Reserved => write!(f, "Reserved"),
+            NetFn::Unknown(x) => write!(f, "Unknown: {}", x),
+        }
+    }
+}
+
+// impl TryFrom<u8> for NetFn {
+//     type Error = NetFnError;
+//     fn try_from(value: u8) -> Result<Self, NetFnError> {
+//         match value {
+//             0x00..=0x01 => Ok(NetFn::Chassis),
+//             0x02..=0x03 => Ok(NetFn::Bridge),
+//             0x04..=0x05 => Ok(NetFn::SensorEvent),
+//             0x06..=0x07 => Ok(NetFn::App),
+//             0x08..=0x09 => Ok(NetFn::Firmware),
+//             0x0A..=0x0B => Ok(NetFn::Storage),
+//             0x0C..=0x0D => Ok(NetFn::Transport),
+//             0x0E..=0x2B => Ok(NetFn::Reserved),
+//             _ => Ok(NetFn::Unknown(value)), // _ => Err(NetFnError::UnknownNetFn(value)),
+//         }
+//     }
+// }
+
+impl From<u8> for NetFn {
+    fn from(value: u8) -> Self {
         match value {
-            0x00..=0x01 => Ok(NetFn::Chassis),
-            0x02..=0x03 => Ok(NetFn::Bridge),
-            0x04..=0x05 => Ok(NetFn::SensorEvent),
-            0x06..=0x07 => Ok(NetFn::App),
-            0x08..=0x09 => Ok(NetFn::Firmware),
-            0x0A..=0x0B => Ok(NetFn::Storage),
-            0x0C..=0x0D => Ok(NetFn::Transport),
-            0x0E..=0x2B => Ok(NetFn::Reserved),
-            _ => Ok(NetFn::Unknown(value)), // _ => Err(NetFnError::UnknownNetFn(value)),
+            0x00..=0x01 => NetFn::Chassis,
+            0x02..=0x03 => NetFn::Bridge,
+            0x04..=0x05 => NetFn::SensorEvent,
+            0x06..=0x07 => NetFn::App,
+            0x08..=0x09 => NetFn::Firmware,
+            0x0A..=0x0B => NetFn::Storage,
+            0x0C..=0x0D => NetFn::Transport,
+            0x0E..=0x2B => NetFn::Reserved,
+            _ => NetFn::Unknown(value), // _ => Err(NetFnError::UnknownNetFn(value)),
         }
     }
 }
@@ -134,6 +168,18 @@ pub enum Lun {
     Sms,
     Oem2,
 }
+
+impl fmt::Display for Lun {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Lun::Bmc => write!(f, "BMC"),
+            Lun::Oem1 => write!(f, "OEM1"),
+            Lun::Sms => write!(f, "SMS"),
+            Lun::Oem2 => write!(f, "OEM2"),
+        }
+    }
+}
+
 impl TryFrom<u8> for Lun {
     type Error = LunError;
 
@@ -194,6 +240,20 @@ pub enum SoftwareType {
     Reserved(u8),
 }
 
+impl fmt::Display for SoftwareType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            SoftwareType::Bios => write!(f, "BIOS"),
+            SoftwareType::SmiHandler => write!(f, "SMI Handler"),
+            SoftwareType::SystemManagementSoftware => write!(f, "System Management Software"),
+            SoftwareType::Oem => write!(f, "OEM"),
+            SoftwareType::RemoteConsoleSoftware(x) => write!(f, "Remote Console Software: {}", x),
+            SoftwareType::TerminalModeRemoteConsole => write!(f, "Terminal Mode Remote Console"),
+            SoftwareType::Reserved(x) => write!(f, "Reserved: {}", x),
+        }
+    }
+}
+
 impl From<u8> for SoftwareType {
     fn from(value: u8) -> Self {
         match value {
@@ -226,6 +286,15 @@ impl Into<u8> for SoftwareType {
 pub enum SlaveAddress {
     Bmc,
     Unknown(u8),
+}
+
+impl fmt::Display for SlaveAddress {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            SlaveAddress::Bmc => write!(f, "BMC"),
+            SlaveAddress::Unknown(x) => write!(f, "Unknown: {}", x),
+        }
+    }
 }
 
 impl From<u8> for SlaveAddress {

@@ -48,17 +48,18 @@ impl Into<Vec<u8>> for RmcpHeader {
     }
 }
 
-impl RmcpHeader {
-    pub fn new(version: u8, sequence_number: u8, message_class: MessageClass) -> RmcpHeader {
-        RmcpHeader {
-            version,
-            reserved: 0x00,
-            sequence_number,
-            rmcp_ack: false,
-            message_class,
-        }
-    }
-}
+// Doesn't apply....yet
+// impl RmcpHeader {
+//     pub fn new(version: u8, sequence_number: u8, message_class: MessageClass) -> RmcpHeader {
+//         RmcpHeader {
+//             version,
+//             reserved: 0x00,
+//             sequence_number,
+//             rmcp_ack: false,
+//             message_class,
+//         }
+//     }
+// }
 
 impl Default for RmcpHeader {
     fn default() -> RmcpHeader {

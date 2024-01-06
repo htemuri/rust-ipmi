@@ -1,10 +1,12 @@
+use core::fmt;
+
 use crate::{err::CommandError, NetFn};
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub enum Command {
     Unknown(u8),
     /// APP Commands
-    Reserved,
+    // Reserved,
     // GetDeviceId,
     // ColdReset,
     // WarmReset,
@@ -69,6 +71,17 @@ pub enum Command {
     // FirmwareFirewallConfiguration,
 }
 
+impl fmt::Display for Command {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Command::Unknown(x) => write!(f, "Unknown: {}", x),
+            Command::GetChannelAuthCapabilities => write!(f, "Get Channel Auth Capabilities"),
+            Command::SetSessionPrivilegeLevel => write!(f, "Set Session Privilege Level"),
+            Command::GetChannelCipherSuites => write!(f, "Get Channel Cipher Suites"),
+        }
+    }
+}
+
 type CommandAndNetfn = (u8, NetFn);
 
 impl TryFrom<CommandAndNetfn> for Command {
@@ -84,7 +97,7 @@ impl TryFrom<CommandAndNetfn> for Command {
                 0x3b => Ok(Command::SetSessionPrivilegeLevel),
                 _ => Ok(Command::Unknown(command_code)), // _ => Err(CommandError::UnknownCommandCode(command_code))?,
             },
-            _ => Ok(Command::Reserved),
+            _ => Ok(Command::Unknown(command_code)),
         }
     }
 }
@@ -95,7 +108,7 @@ impl Into<u8> for Command {
             Command::GetChannelAuthCapabilities => 0x38,
             Command::GetChannelCipherSuites => 0x54,
             Command::SetSessionPrivilegeLevel => 0x3b,
-            Command::Reserved => 0x00,
+            // Command::Reserved => 0x00,
             Command::Unknown(x) => x,
         }
     }
@@ -107,7 +120,7 @@ impl Into<CommandAndNetfn> for Command {
             Command::GetChannelAuthCapabilities => (0x38, NetFn::App),
             Command::GetChannelCipherSuites => (0x54, NetFn::App),
             Command::SetSessionPrivilegeLevel => (0x3b, NetFn::App),
-            Command::Reserved => (0x00, NetFn::Unknown(0)),
+            // Command::Reserved => (0x00, NetFn::Unknown(0)),
             Command::Unknown(x) => (x, NetFn::Unknown(0)),
         }
     }

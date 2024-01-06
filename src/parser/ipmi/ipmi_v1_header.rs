@@ -70,17 +70,17 @@ impl Into<Vec<u8>> for IpmiV1Header {
     }
 }
 
-impl IpmiV1Header {
-    pub fn new(auth_type: AuthType, session_seq_number: u32, session_id: u32) -> IpmiV1Header {
-        IpmiV1Header {
-            auth_type,
-            session_seq_number,
-            session_id,
-            auth_code: None,
-            payload_length: 0,
-        }
-    }
-}
+// impl IpmiV1Header {
+//     pub fn new(auth_type: AuthType, session_seq_number: u32, session_id: u32) -> IpmiV1Header {
+//         IpmiV1Header {
+//             auth_type,
+//             session_seq_number,
+//             session_id,
+//             auth_code: None,
+//             payload_length: 0,
+//         }
+//     }
+// }
 
 impl Default for IpmiV1Header {
     fn default() -> Self {

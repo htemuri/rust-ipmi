@@ -43,7 +43,7 @@ impl TryFrom<&[u8]> for IpmiPayloadRequest {
         let netfn_rqlun = BitSlice::<u8, Msb0>::from_element(&value[1]);
         let rqseq_rslun = BitSlice::<u8, Msb0>::from_element(&value[4]);
 
-        let net_fn: NetFn = netfn_rqlun[0..6].load::<u8>().try_into()?;
+        let net_fn: NetFn = netfn_rqlun[0..6].load::<u8>().into();
 
         Ok(IpmiPayloadRequest {
             rs_addr_type,
@@ -155,12 +155,12 @@ impl IpmiPayloadRequest {
         }
     }
 
-    pub fn payload_length(&self) -> usize {
-        match &self.data {
-            Some(x) => 7 + x.len(),
-            None => 7,
-        }
-    }
+    // pub fn payload_length(&self) -> usize {
+    //     match &self.data {
+    //         Some(x) => 7 + x.len(),
+    //         None => 7,
+    //     }
+    // }
 }
 
 impl Default for IpmiPayloadRequest {

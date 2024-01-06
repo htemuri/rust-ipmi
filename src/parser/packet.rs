@@ -1,5 +1,3 @@
-use std::fmt::Display;
-
 use crate::{
     err::PacketError,
     helpers::utils::{aes_128_cbc_decrypt, aes_128_cbc_encrypt, generate_iv, hash_hmac_sha_256},
@@ -151,7 +149,7 @@ impl Packet {
             let mut auth_code_input: Vec<u8> = header.into();
             let iv = generate_iv();
             auth_code_input.extend(&iv);
-
+            // println!("{:x?}", self.payload.clone().unwrap());
             let mut encrypted_payload = aes_128_cbc_encrypt(
                 k2.clone()[..16].try_into().unwrap(), // aes 128 cbc wants the first 128 bits of k2 as the key
                 iv,

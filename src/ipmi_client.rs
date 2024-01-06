@@ -32,6 +32,7 @@ pub type Result<T> = core::result::Result<T, IPMIClientError>;
 pub struct IPMIClient {
     client_socket: UdpSocket,
     auth_state: AuthState,
+    privilege: Privilege,
     session_seq_number: u32,
     auth_algorithm: Option<AuthAlgorithm>,
     integrity_algorithm: Option<IntegrityAlgorithm>,
@@ -94,6 +95,7 @@ impl IPMIClient {
             cipher_list_index: 0,
             managed_system_random_number: None,
             remote_console_session_id: None,
+            privilege: Privilege::Callback,
         })
     }
 
@@ -182,11 +184,35 @@ impl IPMIClient {
         net_fn: T,
         command_code: u8,
         data: C,
-    ) -> Result<Option<Payload>> {
+    ) -> Result<IpmiPayloadResponse> {
         // must establish session first
         if self.auth_state != AuthState::Established {
             Err(IPMIClientError::SessionNotEstablishedYet)?
         };
+
+        // Set session privilege level to ADMIN
+        if self.privilege != Privilege::Administrator {
+            let set_session = IpmiPayloadRawRequest::new(
+                NetFn::App,
+                (0x3b, 0x6.into()).try_into()?,
+                Some(vec![Privilege::Administrator.into()]),
+            )
+            .create_packet(
+                self.managed_system_session_id.clone().unwrap(),
+                self.session_seq_number,
+            );
+
+            let set_session_response: Packet = self.send_packet(set_session)?;
+            self.session_seq_number += 1;
+            if let Some(Payload::Ipmi(IpmiPayload::Response(payload))) =
+                set_session_response.payload
+            {
+                if payload.completion_code == CompletionCode::CompletedNormally {
+                    self.privilege = Privilege::Administrator;
+                }
+            }
+        }
+
         let raw_request: Packet;
 
         let netfn: NetFn = net_fn
@@ -217,10 +243,11 @@ impl IPMIClient {
 
         let response: Packet = self.send_packet(raw_request)?;
         self.session_seq_number += 1;
-        if let Some(payload) = response.payload {
-            return Ok(Some(payload));
+        if let Some(Payload::Ipmi(IpmiPayload::Response(payload))) = response.payload {
+            return Ok(payload);
         }
-        Ok(None)
+        Err(IPMIClientError::NoResponse)?
+        // Ok(None)
     }
 
     fn discovery_request(&mut self) -> Result<()> {
